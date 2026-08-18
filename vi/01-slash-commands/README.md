@@ -66,12 +66,12 @@ Lệnh tích hợp sẵn là các lối tắt cho các hành động phổ biế
 | `/powerup` | Khám phá tính năng thông qua các bài học tương tác với demo hoạt hình |
 | `/privacy-settings` | Cài đặt quyền riêng tư (chỉ Pro/Max) |
 | `/release-notes` | Xem changelog |
-| `/reload-plugins` | Tải lại các plugins hoạt động |
+| `/reload-plugins` | Tải lại các plugins hoạt động. Từ v2.1.221, hầu hết các lần cài đặt đều kích hoạt ngay, nên chỉ cần lệnh này khi bản tóm tắt cài đặt hiển thị `Run /reload-plugins to activate.` |
 | `/remote-control` | Điều khiển từ xa từ claude.ai (bí danh: `/rc`) |
 | `/remote-env` | Cấu hình môi trường từ xa mặc định |
 | `/rename [name]` | Đổi tên phiên |
 | `/resume [session]` | Tiếp tục cuộc hội thoại (bí danh: `/continue`) |
-| `/review` | **Đã lỗi thời** — cài đặt plugin `code-review` thay thế |
+| `/review [low\|medium\|high\|xhigh\|max\|ultra] [--fix] [--comment] [pr#\|branch\|path]` | Bí danh của `/code-review` (v2.1.223): review diff hiện tại, hoặc số PR, nhánh, hay đường dẫn bạn truyền vào — ví dụ `/review 1234`. Nhận cùng các mức effort và flags. Nếu không chỉ định mức, nó dùng lại mức `low`–`max` bạn đã gõ lần trước |
 | `/rewind` | Quay lại cuộc hội thoại và/hoặc code (bí danh: `/checkpoint`) |
 | `/sandbox` | Bật/tắt chế độ sandbox |
 | `/schedule [description]` | Tạo/quản lý các tác vụ định kỳ |
@@ -84,7 +84,6 @@ Lệnh tích hợp sẵn là các lối tắt cho các hành động phổ biế
 | `/tasks` | Liệt kê/quản lý các tác vụ nền |
 | `/terminal-setup` | Cấu hình terminal keybindings |
 | `/theme` | Thay đổi chủ đề màu |
-| `/ultraplan <prompt>` | Soạn kế hoạch trong ultraplan session, xem trong trình duyệt |
 | `/upgrade` | Mở trang nâng cấp cho tier cao hơn |
 | `/voice` | Bật/tắt nhập liệu giọng nói push-to-talk |
 
@@ -104,7 +103,6 @@ Những skills này được gửi kèm với Claude Code và được gọi nh�
 
 | Lệnh | Trạng Thái |
 |---------|--------|
-| `/review` | Đã lỗi thời — được thay thế bởi plugin `code-review` |
 | `/output-style` | Đã xóa trong v2.1.91 (lỗi thời từ v2.1.73) — dùng `/config` → Output style, hoặc setting `outputStyle` |
 | `/pr-comments` | Đã xóa trong v2.1.91 — hỏi Claude trực tiếp để xem bình luận PR |
 | `/vim` | Đã xóa trong v2.1.92 — sử dụng /config → Editor mode |
@@ -113,14 +111,14 @@ Những skills này được gửi kèm với Claude Code và được gọi nh�
 
 - `/fork` và `/subtask` hoán đổi vai trò trong **v2.1.212**. `/fork` giờ sao chép cuộc hội thoại thành một phiên nền độc lập mới; hành vi subagent-được-fork mà nó từng có đã chuyển sang lệnh mới `/subtask`. Lịch sử: `/fork` là bí danh của `/branch` từ v2.1.77 đến v2.1.161; từ v2.1.161 đến v2.1.211 nó khởi chạy một subagent được fork (việc mà `/subtask` làm bây giờ). Khi tắt agent view, `/subtask` không khả dụng và `/fork` giữ hành vi subagent-được-fork
 - `/output-style` đã lỗi thời (v2.1.73) và bị xóa (v2.1.91) — output styles vẫn có sẵn qua `/config` → Output style hoặc setting `outputStyle`; các bản tích hợp sẵn là Default, Proactive, Explanatory, và Learning
-- `/review` đã lỗi thời thay vào đó là plugin `code-review`
+- `/review` trở thành bí danh đầy đủ của `/code-review` — cùng target, mức effort và flags (v2.1.223). Lịch sử: ban đầu nó chuyển sang engine `/code-review medium` trong v2.1.186 nhưng vẫn chỉ dùng cho PR
 - Lệnh `/effort` được thêm với mức `max` yêu cầu Opus 4.6
 - Lệnh `/voice` được thêm cho nhập liệu giọng nói push-to-talk
 - Lệnh `/schedule` được thêm để tạo/quản lý các tác vụ định kỳ
 - Lệnh `/color` được thêm để tùy chỉnh thanh prompt
 - `/pr-comments` đã xóa trong v2.1.91 — hỏi Claude trực tiếp để xem bình luận PR
 - `/vim` đã xóa trong v2.1.92 — sử dụng /config → Editor mode thay thế
-- `/ultraplan` được thêm để xem và thực thi kế hoạch trong trình duyệt
+- `/ultraplan` đã bị gỡ bỏ trong v2.1.222 — hãy dùng plan mode thay thế
 - `/powerup` được thêm để học tính năng tương tác
 - `/sandbox` được thêm để bật/tắt chế độ sandbox
 - Bộ chọn `/model` hiện hiển thị nhãn dễ đọc cho con người (ví dụ: "Sonnet 4.6") thay vì ID mô hình thô
@@ -559,8 +557,10 @@ Nếu cả hai tồn tại với cùng tên, **skill sẽ được ưu tiên**. 
 
 ---
 
-**Cập Nhật Lần Cuối**: Tháng 4 năm 2026
-**Phiên Bản Claude Code**: 2.1+
+**Cập Nhật Lần Cuối**: Ngày 15 tháng 8 năm 2026
+**Phiên Bản Claude Code**: 2.1.233
+**Nguồn**:
+- https://code.claude.com/docs/en/commands
 **Các Mô Hình Tương Thích**: Claude Sonnet 4.6, Claude Opus 4.6, Claude Haiku 4.5
 
 *Phần của series hướng dẫn [Claude How To](../)*
