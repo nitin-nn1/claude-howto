@@ -61,8 +61,14 @@
 | `hooks` | フック定義の配列 | `[{ "type": "command", ... }]` |
 | `type` | フックタイプ：`"command"`（bash）、`"prompt"`（LLM）、`"http"`（webhook）、`"mcp_tool"`（MCP ツール呼び出し、v2.1.118 以降）、`"agent"`（サブエージェント） | `"command"` |
 | `command` | 実行するシェルコマンド | `"$CLAUDE_PROJECT_DIR/.claude/hooks/format.sh"` |
-| `timeout` | オプションのタイムアウト（秒、デフォルト 60） | `30` |
+| `timeout` | オプションのタイムアウト（秒）。デフォルトは command/http/mcp_tool が 600、prompt が 30、agent が 60。 | `30` |
 | `once` | `true` の場合、フックはセッションごとに 1 回のみ実行 | `true` |
+| `async` | `true` の場合、ブロックせずにバックグラウンドで実行 | `true` |
+| `asyncRewake` | `true` の場合、バックグラウンドで実行し、終了コード 2 で Claude を起こす。`async` を含意する。 | `true` |
+| `shell` | `"bash"` または `"powershell"` を受け付ける。デフォルトは `"bash"`、Git Bash が未インストールの Windows では `"powershell"`。 | `"bash"` |
+| `statusMessage` | フック実行中に表示されるカスタムスピナーメッセージ | `"フォーマット中…"` |
+
+> **注意**: 一部のイベントはデフォルトのタイムアウトを引き下げる。`UserPromptSubmit` は command / http / mcp_tool のデフォルトを 30 秒に、`MessageDisplay` は 10 秒に下げる。`SessionEnd` フックは 1.5 秒の予算を共有し、設定でより長い `timeout` を指定した場合は Claude Code が最大 60 秒まで予算を引き上げる。
 
 ### マッチャーパターン
 
@@ -171,6 +177,8 @@ LLM はプロンプトを評価し、構造化された判定を返す（詳細�
 }
 ```
 
+> **注意**: Agent フックは実験的機能であり、変更される可能性がある。
+
 **主要プロパティ：**
 - `"type": "agent"` -- agent フックであることを示す
 - `"prompt"` -- サブエージェントへのタスク説明
@@ -179,7 +187,7 @@ LLM はプロンプトを評価し、構造化された判定を返す（詳細�
 
 ## フックイベント
 
-Claude Code は **31 種類のフックイベント** をサポートする。
+Claude Code は **33 種類のフックイベント** をサポートする。
 
 | イベント | 発火タイミング | マッチャー入力 | ブロック可否 | 用途例 |
 |----------|---------------|---------------|-------------|--------|
@@ -209,6 +217,8 @@ Claude Code は **31 種類のフックイベント** をサポートする。
 | **FileChanged** | 監視ファイル変更 | （なし） | 不可 | ファイル監視、再ビルド |
 | **PreCompact** | コンテキスト圧縮前 | manual/auto | 不可 | 圧縮前の処理 |
 | **PostCompact** | 圧縮完了後 | （なし） | 不可 | 圧縮後の処理 |
+| **PreModelSwitch** | 要求されたモデル切り替えを Claude Code が適用する前 | 切り替え先モデルの正式名（`to_model` から導出） | 可 | モデル変更の制御・拒否 |
+| **PostModelSwitch** | セッションのモデルが変更された後（再開時のモデル復元など、Claude Code 自身による変更を含む） | 切り替え先モデルの正式名（`to_model` から導出） | 不可 | モデル変更のロギング・追随処理 |
 | **WorktreeCreate** | ワークツリー作成中 | （なし） | 可（パス返却） | ワークツリー初期化 |
 | **WorktreeRemove** | ワークツリー削除中 | （なし） | 不可 | ワークツリークリーンアップ |
 | **Elicitation** | MCP サーバーがユーザー入力を要求 | （なし） | 可 | 入力検証 |
@@ -1314,7 +1324,7 @@ echo $?
 
 | 項目 | 動作 |
 |------|------|
-| **タイムアウト** | デフォルト 60 秒、コマンドごとに設定可能 |
+| **タイムアウト** | command/http/mcp_tool はデフォルト 600 秒（prompt は 30 秒、agent は 60 秒）、フックごとに設定可能 |
 | **並列化** | マッチしたフックはすべて並列実行 |
 | **重複排除** | 同一のフックコマンドは重複排除される |
 | **環境** | カレントディレクトリで Claude Code の環境のもと実行 |
@@ -1371,11 +1381,11 @@ chmod +x ~/.claude/hooks/*.sh
 
 ---
 
-**最終更新：** 2026 年 8 月 15 日
-**Claude Code バージョン：** 2.1.233
+**最終更新：** 2026 年 9 月 2 日
+**Claude Code バージョン：** 2.1.257
 **情報源：**
 - https://code.claude.com/docs/en/hooks
 - https://code.claude.com/docs/en/changelog
 - https://github.com/anthropics/claude-code/releases/tag/v2.1.118
 - https://github.com/anthropics/claude-code/releases/tag/v2.1.119
-**対応モデル：** Claude Sonnet 4.6、Claude Opus 4.7、Claude Haiku 4.5
+**対応モデル：** Claude Fable 5、Claude Opus 5、Claude Sonnet 5、Claude Sonnet 4.6、Claude Opus 4.8、Claude Haiku 4.5

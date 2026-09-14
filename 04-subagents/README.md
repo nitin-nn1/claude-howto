@@ -21,17 +21,21 @@ Subagents are specialized AI assistants that Claude Code can delegate tasks to. 
 10. [Persistent Memory for Subagents](#persistent-memory-for-subagents)
 11. [Background Subagents](#background-subagents)
 12. [Worktree Isolation](#worktree-isolation)
-13. [Restrict Spawnable Subagents](#restrict-spawnable-subagents)
-14. [`claude agents` CLI Command](#claude-agents-cli-command)
-15. [Agent Teams (Experimental)](#agent-teams-experimental)
-16. [Plugin Subagent Security](#plugin-subagent-security)
-17. [Architecture](#architecture)
-18. [Context Management](#context-management)
-19. [When to Use Subagents](#when-to-use-subagents)
-20. [Best Practices](#best-practices)
-21. [Example Subagents in This Folder](#example-subagents-in-this-folder)
-22. [Installation Instructions](#installation-instructions)
-23. [Related Concepts](#related-concepts)
+13. [Forked Subagents](#forked-subagents)
+14. [Restrict Spawnable Subagents](#restrict-spawnable-subagents)
+15. [`claude agents` CLI Command](#claude-agents-cli-command)
+16. [Agent Teams (Experimental)](#agent-teams-experimental)
+17. [Plugin Subagent Security](#plugin-subagent-security)
+18. [Architecture](#architecture)
+19. [Context Management](#context-management)
+20. [When to Use Subagents](#when-to-use-subagents)
+21. [Best Practices](#best-practices)
+22. [Example Subagents in This Folder](#example-subagents-in-this-folder)
+23. [Installation Instructions](#installation-instructions)
+24. [File Structure](#file-structure)
+25. [Related Concepts](#related-concepts)
+26. [Observability](#observability)
+27. [Additional Resources](#additional-resources)
 
 ---
 
@@ -104,6 +108,8 @@ background: false  # Optional - run as background task
 effort: high  # Optional - reasoning effort (low, medium, high, xhigh, max)
 isolation: worktree  # Optional - git worktree isolation
 initialPrompt: "Start by analyzing the codebase"  # Optional - auto-submitted first turn
+experimental:  # Optional - experimental settings block
+  cacheTtl: "1h"  # Cache TTL for this subagent: "5m" or "1h" (v2.1.248+)
 hooks:  # Optional - component-scoped hooks
   PreToolUse:
     - matcher: "Bash"
@@ -126,7 +132,7 @@ to solving problems.
 | `tools` | No | Comma-separated list of specific tools. Omit to inherit all tools. Supports `Agent(agent_name)` syntax to restrict spawnable subagents |
 | `disallowedTools` | No | Comma-separated list of tools the subagent must not use |
 | `model` | No | Model to use: `sonnet`, `opus`, `haiku`, full model ID, or `inherit`. Defaults to configured subagent model |
-| `permissionMode` | No | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, `plan`. As of v2.1.212, the Task tool's `mode` invocation parameter is deprecated and ignored — subagents inherit the parent session's permission mode by default unless overridden here |
+| `permissionMode` | No | `manual` (renamed from `default` in v2.1.200 — `default` is still accepted as the older name), `acceptEdits`, `dontAsk`, `bypassPermissions`, `plan`, `auto`. As of v2.1.212, the Task tool's `mode` invocation parameter is deprecated and ignored — subagents inherit the parent session's permission mode by default unless overridden here |
 | `maxTurns` | No | Maximum number of agentic turns the subagent can take |
 | `skills` | No | Comma-separated list of skills to preload. Injects full skill content into the subagent's context at startup. **v2.1.133+:** subagents also discover project, user, and plugin skills via the Skill tool — same catalog as the main session, no longer limited to their own embedded set. |
 | `mcpServers` | No | MCP servers to make available to the subagent |
@@ -137,6 +143,18 @@ to solving problems.
 | `isolation` | No | Set to `worktree` to give the subagent its own git worktree |
 | `initialPrompt` | No | Auto-submitted first turn when the subagent runs as the main agent |
 | `color` | No | Display color for the subagent in the task list and transcript. Accepts `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, or `cyan` |
+| `experimental` | No | Experimental settings block (v2.1.248+). `experimental.cacheTtl` sets the cache TTL for this subagent — `"5m"` or `"1h"` |
+
+#### Subagent Model Environment Variables
+
+Two environment variables affect which model a subagent runs on:
+
+| Variable | Version | Description |
+|----------|---------|-------------|
+| `CLAUDE_CODE_SUBAGENT_MODEL` | — | Sets the model used for subagents |
+| `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` | v2.1.257+ | Set to `1` to force the subagent model over a subagent's frontmatter `model:` |
+
+> **Precedence changed in v2.1.251**: before that release, `CLAUDE_CODE_SUBAGENT_MODEL` came first and overrode agent frontmatter — including `model: inherit`. From v2.1.251 on, a subagent's own `model:` frontmatter wins. Set `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (v2.1.257+) when you want the environment variable to override frontmatter again, for example to pin an entire evaluation run to one model.
 
 ### Main-Thread Agent Frontmatter Honoring (v2.1.117+/v2.1.119+)
 
@@ -234,6 +252,8 @@ claude --agents '{
 }
 ```
 
+> **Note**: Since v2.1.243, `--agents` no longer silently ignores invalid JSON or invalid agent definitions — Claude Code exits with a clear error, matching the behavior of `--mcp-config`.
+
 **Priority of Agent Definitions:**
 
 Agent definitions are loaded with this priority order (first match wins):
@@ -255,9 +275,9 @@ Claude Code includes several built-in subagents that are always available:
 | **general-purpose** | Inherits | Complex, multi-step tasks |
 | **Plan** | Inherits | Research for plan mode |
 | **Explore** | Inherits (capped at Opus) | Read-only codebase exploration (quick/medium/very thorough) |
-| **Bash** | Inherits | Terminal commands in separate context |
-| **statusline-setup** | Sonnet | Configure status line |
-| **Claude Code Guide** | Haiku | Answer Claude Code feature questions |
+| **claude** | Inherits | Catch-all for tasks that don't fit a more specialized agent; has every tool available to subagents. Also the default agent for a dispatched background session |
+| **statusline-setup** | Sonnet | Runs when you use `/statusline` to configure your status line |
+| **claude-code-guide** | Haiku | Answers questions about Claude Code features |
 
 ### General-Purpose Subagent
 
@@ -295,15 +315,15 @@ Claude Code includes several built-in subagents that are always available:
 - **"medium"** - Moderate exploration, balanced speed and thoroughness, default approach
 - **"very thorough"** - Comprehensive analysis across multiple locations and naming conventions, may take longer
 
-### Bash Subagent
+### Claude Subagent
 
 | Property | Value |
 |----------|-------|
 | **Model** | Inherits from parent |
-| **Tools** | Bash |
-| **Purpose** | Execute terminal commands in a separate context window |
+| **Tools** | Every tool available to subagents |
+| **Purpose** | Catch-all agent for tasks that don't fit a more specialized agent |
 
-**When used**: When running shell commands that benefit from isolated context.
+**When used**: When a task doesn't match a more specialized built-in agent. It is also the default agent for a dispatched background session; which permission mode it starts in depends on how that session was started.
 
 ### Statusline Setup Subagent
 
@@ -315,7 +335,7 @@ Claude Code includes several built-in subagents that are always available:
 
 **When used**: When setting up or customizing the status line.
 
-### Claude Code Guide Subagent
+### Claude Code Guide Subagent (`claude-code-guide`)
 
 | Property | Value |
 |----------|-------|
@@ -738,6 +758,10 @@ Use `Shift+Down` to navigate between teammates in split-pane mode.
 
 Team configurations are stored at `~/.claude/teams/{team-name}/config.json`.
 
+### Teammate Model Selection
+
+As of v2.1.234, the "Default teammate model" `/config` setting was removed. Teammates now inherit the team lead's model by default, unless the spawn call specifies a different model explicitly.
+
 ### Architecture
 
 ```mermaid
@@ -942,6 +966,7 @@ graph TB
 
 - **Disable built-in Explore/Plan agents** - Set `CLAUDE_CODE_DISABLE_EXPLORE_PLAN_AGENTS=1` to remove the built-in Explore and Plan agents (v2.1.198)
 - **Append to every subagent prompt** - In non-interactive / `--print` mode, `--append-subagent-system-prompt "<text>"` appends text to every subagent's system prompt (v2.1.205)
+- **Append from a file** - `--append-subagent-system-prompt-file ./subagent-rules.txt` reads the same appended text from a file, for prompts too long to pass on the command line. Also `-p`-only, and it cannot be combined with `--append-subagent-system-prompt` (v2.1.261)
 
 ---
 
@@ -1306,8 +1331,8 @@ See the OpenTelemetry section in [Advanced Features → Telemetry](../09-advance
 
 ---
 
-**Last Updated**: August 15, 2026
-**Claude Code Version**: 2.1.233
+**Last Updated**: September 6, 2026
+**Claude Code Version**: 2.1.263
 **Sources**:
 - https://code.claude.com/docs/en/sub-agents
 - https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md

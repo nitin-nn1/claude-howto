@@ -58,7 +58,7 @@ sequenceDiagram
     Tools-->>Claude: Plugin installed ✅
 ```
 
-> **No marketplace required (v2.1.157+)**: Plugins placed in `.claude/skills` directories now auto-load without a marketplace. Scaffold a new one with `claude plugin init <name>`.
+> **No marketplace required (v2.1.157+)**: Plugins placed in `.claude/skills` directories now auto-load without a marketplace. Scaffold a new one with `claude plugin init <name>`, which creates it at `~/.claude/skills/<name>/` (user-global) and auto-loads it in the next session as `<name>@skills-dir`.
 
 ## Plugin Types & Distribution
 
@@ -86,6 +86,20 @@ Plugin manifest uses JSON format in `.claude-plugin/plugin.json`:
   "license": "MIT"
 }
 ```
+
+Beyond those identity fields, the manifest can point Claude Code at components that live somewhere other than the default folders, and carry discovery and dependency metadata:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `workflows` | string \| array | Custom [workflow](https://code.claude.com/docs/en/workflows) script files or directories (replaces the default `workflows/`) |
+| `outputStyles` | string \| array | Custom output style files or directories (replaces the default `output-styles/`) |
+| `lspServers` | string \| array \| object | LSP servers for code intelligence — go to definition, find references, diagnostics. Commonly `"./.lsp.json"`. See [LSP server configuration](#lsp-server-configuration) |
+| `channels` | array | Channel declarations for message injection (Telegram, Slack, Discord style) |
+| `dependencies` | array | Other plugins this plugin requires, optionally with semver version constraints |
+| `keywords` | array | Discovery tags used when browsing and searching marketplaces |
+| `metadata` | object | Free-form object for your own data, such as entitlement or catalog fields |
+| `experimental.themes` | string \| array | Color theme files or directories (replaces the default `themes/`) |
+| `experimental.monitors` | string \| array | [Background Monitor](#background-monitors-v21105) configurations that start automatically when the plugin is active |
 
 ## Plugin Structure Example
 
@@ -123,13 +137,15 @@ my-plugin/
     └── plugin.test.js
 ```
 
+> **Note**: `commands/` is **legacy**. Official guidance is *"Use `skills/` for new plugins."* Existing `commands/` directories keep working — the three example plugins in this module ship one — but a new plugin should put its capabilities in `skills/` as `SKILL.md` directories instead of flat Markdown command files.
+
 ### LSP server configuration
 
 Plugins can include Language Server Protocol (LSP) support for real-time code intelligence. LSP servers provide diagnostics, code navigation, and symbol information as you work.
 
 **Configuration locations**:
 - `.lsp.json` file in the plugin root directory
-- Inline `lsp` key in `plugin.json`
+- The `lspServers` key in `plugin.json` — the official manifest field name. It accepts a string, an array, or an object: a string or array points at LSP config file(s) or directories (for example `"./.lsp.json"`), and an object declares the servers inline.
 
 #### Field reference
 
@@ -543,6 +559,12 @@ Example `blockedMarketplaces` with host/path regex (v2.1.119):
 }
 ```
 
+#### Marketplace `headersHelper` (v2.1.238)
+
+A `url` marketplace — or an individual catalog entry — can name a `headersHelper` command that mints the HTTP headers used to fetch the catalog and any same-origin archives. This is how a private marketplace behind a token-issuing service authenticates without a static secret in the config.
+
+A **catalog entry's** helper runs only on install or update, and only after its command has been shown to you: `claude plugin install` and `claude plugin update` prompt `[y/N]` before running it. Pass `-y` to accept without the prompt in automation.
+
 ### Additional Marketplace Features
 
 - **Marketplace search bar (v2.1.172)**: When browsing a marketplace's plugins in `/plugin`, a search bar lets you filter the marketplace's plugins by name or keyword — handy for large marketplaces where scrolling the full list is slow.
@@ -619,6 +641,10 @@ Plugins can be sourced from multiple locations:
 | **Command** (v2.1.229+) | `{ "source": "command", "command": "..." }` | `{ "source": "command", "command": "acme-plugin-resolver --print-dir" }` |
 
 GitHub and git sources support optional `ref` (branch/tag) and `sha` (commit hash) fields for version pinning.
+
+**Bare source names and `metadata.pluginRoot` (v2.1.239)**: a marketplace's `metadata.pluginRoot` now takes effect — a bare plugin source name in the catalog resolves to a directory under that root, instead of having to be spelled as a full relative path on every entry.
+
+**Skills synced from claude.ai (v2.1.239)**: plugins synced down from claude.ai appear as `name@synced`. Address them that way in `claude plugin enable <name>@synced` and `claude plugin disable <name>@synced`. A synced plugin never overrides an installed plugin of the same name — the two coexist, distinguished by the `@synced` suffix.
 
 #### `archive` source (v2.1.224+)
 
@@ -773,14 +799,31 @@ claude plugin update <name>                  # Update installed plugin to latest
 claude plugin list                           # List installed plugins
 claude plugin enable <name>                  # Enable a disabled plugin
 claude plugin disable <name>                 # Disable a plugin
-claude plugin validate                       # Validate plugin structure
-claude plugin tag <version>                  # Create a release git tag with version validation (v2.1.118+)
+claude plugin validate <path>                # Validate the plugin structure at <path>
+claude plugin tag [path]                     # Create a {name}--v{version} release git tag (v2.1.118+)
 claude plugin prune                          # Remove orphaned auto-installed plugin dependencies (v2.1.121+)
 claude plugin uninstall <name> --prune       # Uninstall and cascade-clean orphaned dependencies (v2.1.121+)
 claude plugin details <name>                 # Show inventory + projected per-turn token cost (v2.1.139+)
+claude plugin init <name>                    # Scaffold a new plugin (alias: claude plugin new)
 ```
 
-Example: `claude plugin tag v0.3.0` validates the version format, creates the matching git tag, and is the recommended way to cut plugin releases for distribution.
+**Aliases**: `claude plugin new` for `init`, `remove` / `rm` for `uninstall`, `ls` for `list`, and `autoremove` for `prune`.
+
+**Flags worth knowing:**
+
+| Command | Flag | Purpose |
+|---------|------|---------|
+| `plugin init` | `--with <components...>` | Scaffold specific component folders: `skills`, `agents`, `hooks`, `mcp`, `lsp`, `output-style`, `channel` |
+| `plugin init` | `-f`, `--force` | Overwrite an existing `.claude-plugin/` directory |
+| `plugin install` | `--config <key=value>` | Set a `userConfig` option at install time |
+| `plugin install` | `-y`, `--yes` | Accept commands without a confirmation prompt |
+| `plugin list` | `--available` | Also list plugins available from marketplaces (requires `--json`) |
+| `plugin tag` | `--push` | Push the tag to the remote after creating it |
+| `plugin tag` | `--dry-run` | Print what would be tagged without creating the tag |
+| `plugin validate` | `--strict` | Treat warnings as errors |
+| `plugin validate` | `--json` | Emit a machine-readable validation report (v2.1.259+) |
+
+Example: `claude plugin tag ./my-plugin` takes a **path** to the plugin (not a version string). It creates a `{name}--v{version}` git tag derived from `plugin.json`, validating that `plugin.json` and any enclosing marketplace entry agree, and is the recommended way to cut plugin releases for distribution.
 
 `claude plugin prune` is useful after installing or uninstalling marketplace plugins that pulled in their own dependencies — it removes any auto-installed plugins whose parent plugin has since been removed. `plugin uninstall --prune` does the same cascade in a single step.
 
@@ -998,7 +1041,7 @@ This ensures that plugins cannot escalate privileges or modify the host environm
 2. Write `.claude-plugin/plugin.json` manifest
 3. Create `README.md` with documentation
 4. Test locally with `claude --plugin-dir ./my-plugin`
-5. Tag the release with `claude plugin tag v0.3.0` (v2.1.118+) — validates the version string and creates the matching git tag
+5. Tag the release with `claude plugin tag ./my-plugin` (v2.1.118+) — takes the plugin **path** and creates a `{name}--v{version}` git tag derived from `plugin.json`
 6. Submit to plugin marketplace
 7. Get reviewed and approved
 8. Published on marketplace
@@ -1098,7 +1141,7 @@ Complete PR review workflow with security, testing, and documentation checks.
 
 2. **View plugin details:**
    ```bash
-   /plugin info plugin-name
+   claude plugin details plugin-name
    ```
 
 3. **Install a plugin:**
@@ -1121,13 +1164,17 @@ Complete PR review workflow with security, testing, and documentation checks.
 ### Listing Installed Plugins
 
 ```bash
-/plugin list --installed
+/plugin list             # all installed plugins
+/plugin list --enabled   # only enabled plugins
+/plugin list --disabled  # only disabled plugins
 ```
 
 ### Updating a Plugin
 
+Use the CLI form — it is the one documented under [`plugin update`](https://code.claude.com/docs/en/plugins-reference) and the one Claude Code itself points you to when an update is available:
+
 ```bash
-/plugin update plugin-name
+claude plugin update plugin-name
 ```
 
 ### Disabling/Enabling a Plugin
@@ -1190,7 +1237,7 @@ The following Claude Code features work together with plugins:
 - Verify paths in `plugin.json` match actual directory structure
 - Check file permissions: `chmod +x scripts/`
 - Review component file syntax
-- Check logs: `/plugin debug plugin-name`
+- Check the component inventory: `claude plugin details plugin-name`
 
 ### MCP Connection Failed
 - Verify environment variables are set correctly
@@ -1199,9 +1246,9 @@ The following Claude Code features work together with plugins:
 - Review MCP configuration in `mcp/` directory
 
 ### Commands Not Available After Install
-- Ensure plugin was installed successfully: `/plugin list --installed`
-- Check if plugin is enabled: `/plugin status plugin-name`
-- Restart Claude Code: `exit` and reopen
+- Ensure plugin was installed successfully: `/plugin list`
+- Check if plugin is enabled: `/plugin list --enabled`
+- Check whether it's active yet — see the install summary guidance in [Installation Methods](#installation-methods): `Plugin is now active.` needs no action, `Run /reload-plugins to activate.` means run that command (a restart is not required)
 - Check for naming conflicts with existing commands
 
 ### Hook Execution Issues
@@ -1222,14 +1269,16 @@ The following Claude Code features work together with plugins:
 
 ---
 
-**Last Updated**: August 15, 2026
-**Claude Code Version**: 2.1.233
+**Last Updated**: September 6, 2026
+**Claude Code Version**: 2.1.263
 **Sources**:
 - https://code.claude.com/docs/en/plugins
+- https://code.claude.com/docs/en/plugins-reference
 - https://code.claude.com/docs/en/changelog#2-1-172
 - https://code.claude.com/docs/en/changelog
 - https://code.claude.com/docs/en/commands
 - https://code.claude.com/docs/en/plugin-marketplaces
+- https://code.claude.com/docs/en/discover-plugins.md
 - https://github.com/anthropics/claude-code/releases/tag/v2.1.117
 - https://github.com/anthropics/claude-code/releases/tag/v2.1.118
 - https://github.com/anthropics/claude-code/releases/tag/v2.1.131
@@ -1240,4 +1289,5 @@ The following Claude Code features work together with plugins:
 - https://github.com/anthropics/claude-code/releases/tag/v2.1.143
 - https://code.claude.com/docs/en/cli-reference
 - https://code.claude.com/docs/en/model-config
+- https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md
 **Compatible Models**: Claude Fable 5, Claude Opus 5, Claude Sonnet 5, Claude Sonnet 4.6, Claude Opus 4.8, Claude Haiku 4.5

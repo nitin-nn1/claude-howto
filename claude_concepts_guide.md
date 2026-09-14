@@ -1132,7 +1132,7 @@ Hooks are event-driven shell commands that execute automatically in response to 
 
 ### Hook Events
 
-Claude Code supports **31 hook events** across five hook types (command, http, mcp_tool, prompt, agent):
+Claude Code supports **33 hook events** across five hook types (command, http, mcp_tool, prompt, agent):
 
 | Hook Event | Trigger | Use Cases |
 |------------|---------|-----------|
@@ -1162,6 +1162,8 @@ Claude Code supports **31 hook events** across five hook types (command, http, m
 | **FileChanged** | Watched file changes | File monitoring, rebuild triggers |
 | **PreCompact** | Before context compaction | State preservation |
 | **PostCompact** | After compaction completes | Post-compact actions |
+| **PreModelSwitch** | Before a requested model switch is applied | Gate or veto model changes |
+| **PostModelSwitch** | After the session's model changes | Log or react to model changes |
 | **WorktreeCreate** | Worktree being created | Environment setup, dependency install |
 | **WorktreeRemove** | Worktree being removed | Cleanup, resource deallocation |
 | **Elicitation** | MCP server requests user input | Input validation |
@@ -1433,15 +1435,13 @@ Complete configuration example:
     "enabled": true,
     "showThinkingProcess": true
   },
-  "backgroundTasks": {
-    "enabled": true,
-    "maxConcurrentTasks": 5
-  },
   "permissions": {
     "defaultMode": "manual"
   }
 }
 ```
+
+There is no `settings.json` block for background tasks — the feature is controlled by the `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS` environment variable, and concurrency by `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` (default `20`).
 
 **See**: [09-advanced-features/](09-advanced-features/) for comprehensive guide
 
@@ -1474,12 +1474,12 @@ Claude Code supports the following models with adaptive reasoning effort:
 - [Anthropic Cookbook](https://github.com/anthropics/anthropic-cookbook)
 
 ---
-**Last Updated**: August 15, 2026
-**Claude Code Version**: 2.1.233
+**Last Updated**: September 2, 2026
+**Claude Code Version**: 2.1.257
 **Sources**:
 - https://www.anthropic.com/news/claude-sonnet-5
 - https://code.claude.com/docs/en/cli-reference
 - https://code.claude.com/docs/en/model-config
 - https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md
 - https://code.claude.com/docs/en/hooks
-**Compatible Models**: Claude Fable 5, Claude Opus 5, Claude Sonnet 5, Claude Sonnet 4.6, Claude Opus 4.8, Claude Haiku 4.5
+**Compatible Models**: Claude Fable 5.1, Claude Fable 5, Claude Opus 5, Claude Sonnet 5, Claude Sonnet 4.6, Claude Opus 4.8, Claude Haiku 4.5

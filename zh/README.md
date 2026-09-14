@@ -206,7 +206,7 @@ cp -r 03-skills/code-review-specialist ~/.claude/skills/
 完整路径大约需要 11 到 13 小时。但你在 15 分钟内就能获得直接收益，只要复制一个 slash command 模板并试用即可。
 
 **我可以搭配 Claude Sonnet / Haiku / Opus 使用吗？**
-可以。所有模板都适用于 Claude Sonnet 4.6、Claude Opus 4.6 和 Claude Haiku 4.5。
+可以。所有模板都适用于 Claude Fable 5、Claude Opus 5、Claude Sonnet 5、Claude Sonnet 4.6、Claude Opus 4.8、Claude Haiku 4.5。
 
 **我可以参与贡献吗？**
 当然可以。请查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解贡献规范。我们欢迎新的示例、bug 修复、文档改进以及社区模板。
@@ -480,11 +480,11 @@ chmod +x ~/.claude/hooks/*.sh
 
 **Hook 类型**（5 种）：`command`、`http`、`prompt`、`mcp_tool`、`agent` — 决定 hook 如何运行。
 
-**Hook 事件**（31 个，分 4 类）— 决定 hook 何时运行:
+**Hook 事件**（33 个，分 4 类）— 决定 hook 何时运行:
 - **工具 Hook**: `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`, `PermissionRequest`, `PermissionDenied`
 - **会话 Hook**: `SessionStart`, `Setup`, `SessionEnd`, `Stop`, `StopFailure`, `SubagentStart`, `SubagentStop`
 - **任务 Hook**: `UserPromptSubmit`, `UserPromptExpansion`, `MessageDisplay`, `TaskCompleted`, `TaskCreated`, `TeammateIdle`（`TaskCompleted` 和 `TaskCreated` 仅在启用 todo 工具时触发 —— 在 Opus 4.8、Sonnet 5、Fable 5、Mythos 5 及更新模型上默认关闭；`CLAUDE_CODE_ENABLE_TODO_TOOLS=1` 可恢复）
-- **生命周期 Hook**: `ConfigChange`, `CwdChanged`, `DirectoryAdded`, `FileChanged`, `PreCompact`, `PostCompact`, `WorktreeCreate`, `WorktreeRemove`, `Notification`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`
+- **生命周期 Hook**: `ConfigChange`, `CwdChanged`, `DirectoryAdded`, `FileChanged`, `PreCompact`, `PostCompact`, `PreModelSwitch`, `PostModelSwitch`, `WorktreeCreate`, `WorktreeRemove`, `Notification`, `InstructionsLoaded`, `Elicitation`, `ElicitationResult`
 
 </details>
 
@@ -878,8 +878,9 @@ MIT 许可证，详见 [LICENSE](LICENSE)。你可以自由使用、修改和分
 
 ---
 
-**最后更新**：2026 年 8 月 15 日
-**Claude Code 版本**：2.1.233
+**最后更新**：2026 年 9 月 2 日
+**Claude Code 版本**：2.1.257
 **来源**：
 - https://code.claude.com/docs/en/hooks
-**兼容模型**：Claude Sonnet 4.6、Claude Opus 4.6、Claude Haiku 4.5
+- https://code.claude.com/docs/en/model-config
+**兼容模型**：Claude Fable 5、Claude Opus 5、Claude Sonnet 5、Claude Sonnet 4.6、Claude Opus 4.8、Claude Haiku 4.5

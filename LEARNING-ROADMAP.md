@@ -102,7 +102,7 @@ graph TD
 | **3** | [Checkpoints](08-checkpoints/) | ⭐⭐ Intermediate | 45 min | Level 1 | Session management | Safe exploration | Experimentation, recovery |
 | **4** | [CLI Basics](10-cli/) | ⭐⭐ Beginner+ | 30 min | Level 1 | None | Core CLI usage | Interactive & print mode |
 | **5** | [Skills](03-skills/) | ⭐⭐ Intermediate | 1 hour | Level 2 | Slash Commands | Automatic expertise | Reusable capabilities, consistency |
-| **6** | [Hooks](06-hooks/) | ⭐⭐ Intermediate | 1 hour | Level 2 | Tools, Commands | Workflow automation (31 events, 5 types) | Validation, quality gates |
+| **6** | [Hooks](06-hooks/) | ⭐⭐ Intermediate | 1 hour | Level 2 | Tools, Commands | Workflow automation (33 events, 5 types) | Validation, quality gates |
 | **7** | [MCP](05-mcp/) | ⭐⭐⭐ Intermediate+ | 1 hour | Level 2 | Configuration | Live data access | Real-time integration, APIs |
 | **8** | [Subagents](04-subagents/) | ⭐⭐⭐ Intermediate+ | 1.5 hours | Level 2 | Memory, Commands | Complex task handling (6 built-in including Bash) | Delegation, specialized expertise |
 | **9** | [Advanced Features](09-advanced-features/) | ⭐⭐⭐⭐⭐ Advanced | 2-3 hours | Level 3 | All previous | Power user tools | Planning, Auto Mode, Channels, Voice Dictation, permissions |
@@ -235,7 +235,7 @@ Before starting Level 2, make sure you're comfortable with these Level 1 concept
 
 #### What You'll Achieve
 ✅ Auto-invoke specialized capabilities with YAML frontmatter (including `effort` and `shell` fields)
-✅ Set up event-driven automation across 31 hook events
+✅ Set up event-driven automation across 33 hook events
 ✅ Use all 5 hook types (command, http, mcp_tool, prompt, agent)
 ✅ Enforce code quality standards
 ✅ Create custom hooks for your workflow
@@ -372,7 +372,7 @@ Before starting Level 3, make sure you're comfortable with these Level 2 concept
 ✅ Auto Mode with background safety classifier
 ✅ Channels for structured multi-session workflows
 ✅ Voice Dictation for hands-free interaction
-✅ Remote control, desktop app, and web sessions
+✅ Remote control (generally available — your machine appears as a device card in the Claude app), desktop app, and web sessions
 ✅ Agent Teams for multi-agent collaboration
 
 #### Hands-on Exercises
@@ -424,6 +424,7 @@ export CLAUDE_AGENT_TEAMS=1
 - [ ] Explored Channels for multi-session workflows
 - [ ] Tried Voice Dictation for hands-free input
 - [ ] Understand Remote Control, Desktop App, and Web sessions
+- [ ] Used `notify_when_idle` on a cross-session `SendMessage` to be told when another session goes idle
 - [ ] Enabled and used Agent Teams for collaborative tasks
 - [ ] Used `/loop` for recurring tasks or scheduled monitoring
 
@@ -697,20 +698,21 @@ Use these checklists to track your progress by level. Run `/self-assessment` any
 Once you've completed all milestones:
 
 1. **Create team documentation** - Document your team's Claude Code setup
-2. **Build custom plugins** - Package your team's workflows
-3. **Explore Remote Control** - Control Claude Code sessions programmatically from external tools
-4. **Try Web Sessions** - Use Claude Code through browser-based interfaces for remote development
-5. **Use the Desktop App** - Access Claude Code features through the native desktop application
-6. **Use Auto Mode** - Let Claude work autonomously with a background safety classifier
-7. **Leverage Auto Memory** - Let Claude learn your preferences automatically over time
-8. **Set up Agent Teams** - Coordinate multiple agents on complex, multi-faceted tasks
-9. **Use Channels** - Organize work across structured multi-session workflows
-10. **Try Voice Dictation** - Use hands-free voice input for interaction with Claude Code
-11. **Use Scheduled Tasks** - Automate recurring checks with `/loop` and cron tools
-12. **Contribute examples** - Share with the community
-13. **Mentor others** - Help teammates learn
-14. **Optimize workflows** - Continuously improve based on usage
-15. **Stay updated** - Follow Claude Code releases and new features
+2. **Build custom plugins** - Package your team's workflows, including the newer manifest fields (`workflows`, `channels`, `dependencies`)
+3. **Try `/design`** - Sketch a UI mockup, screen flow, or landing page on a design canvas instead of hand-writing HTML (research preview, v2.1.233+)
+4. **Explore Remote Control** - Control Claude Code sessions programmatically from external tools, or start one from your phone via its device card in the Claude app
+5. **Try Web Sessions** - Use Claude Code through browser-based interfaces for remote development
+6. **Use the Desktop App** - Access Claude Code features through the native desktop application
+7. **Use Auto Mode** - Let Claude work autonomously with a background safety classifier
+8. **Leverage Auto Memory** - Let Claude learn your preferences automatically over time
+9. **Set up Agent Teams** - Coordinate multiple agents on complex, multi-faceted tasks
+10. **Use Channels** - Organize work across structured multi-session workflows
+11. **Try Voice Dictation** - Use hands-free voice input for interaction with Claude Code
+12. **Use Scheduled Tasks** - Automate recurring checks with `/loop` and cron tools
+13. **Contribute examples** - Share with the community
+14. **Mentor others** - Help teammates learn
+15. **Optimize workflows** - Continuously improve based on usage
+16. **Stay updated** - Follow Claude Code releases and new features
 
 ---
 
@@ -738,8 +740,8 @@ Once you've completed all milestones:
 
 ---
 
-**Last Updated**: August 4, 2026
-**Claude Code Version**: 2.1.220
+**Last Updated**: September 2, 2026
+**Claude Code Version**: 2.1.257
 **Sources**:
 - https://code.claude.com/docs/en/overview
 - https://code.claude.com/docs/en/hooks
@@ -747,7 +749,7 @@ Once you've completed all milestones:
 - https://github.com/anthropics/claude-code/releases/tag/v2.1.144
 - https://github.com/anthropics/claude-code/releases/tag/v2.1.145
 - https://code.claude.com/docs/en/model-config
-**Compatible Models**: Claude Fable 5, Claude Opus 5, Claude Sonnet 5, Claude Sonnet 4.6, Claude Opus 4.8, Claude Haiku 4.5
+**Compatible Models**: Claude Fable 5.1, Claude Fable 5, Claude Opus 5, Claude Sonnet 5, Claude Sonnet 4.6, Claude Opus 4.8, Claude Haiku 4.5
 **Maintained by**: Claude How-To Contributors
 **License**: Educational purposes, free to use and adapt
 

@@ -13,7 +13,7 @@ This document provides a complete index of all example files organized by featur
 - **Categories**: 10 feature categories
 - **Plugins**: 3 complete plugins
 - **Skills**: 6 complete skills
-- **Hooks**: 8 example hooks
+- **Hooks**: 11 example hooks
 - **Ready to Use**: All examples
 
 ---
@@ -224,11 +224,11 @@ Event-driven automation scripts that execute automatically.
 
 **Hook Types** (5): `command`, `http`, `prompt`, `mcp_tool`, `agent` — how a hook runs.
 
-**Hook Events** (31, in 4 categories) — when it runs:
+**Hook Events** (33, in 4 categories) — when it runs:
 - Tool Hooks: PreToolUse, PostToolUse, PostToolUseFailure, PostToolBatch, PermissionRequest, PermissionDenied
 - Session Hooks: SessionStart, Setup, SessionEnd, Stop, StopFailure, SubagentStart, SubagentStop
 - Task Hooks: UserPromptSubmit, UserPromptExpansion, MessageDisplay, TaskCompleted, TaskCreated, TeammateIdle (TaskCompleted/TaskCreated only fire when the todo tools are enabled — off by default on Opus 4.8, Sonnet 5, Fable 5, Mythos 5 and newer)
-- Lifecycle Hooks: ConfigChange, CwdChanged, DirectoryAdded, FileChanged, PreCompact, PostCompact, WorktreeCreate, WorktreeRemove, Notification, InstructionsLoaded, Elicitation, ElicitationResult
+- Lifecycle Hooks: ConfigChange, CwdChanged, DirectoryAdded, FileChanged, PreCompact, PostCompact, PreModelSwitch, PostModelSwitch, WorktreeCreate, WorktreeRemove, Notification, InstructionsLoaded, Elicitation, ElicitationResult
 
 ---
 
@@ -377,7 +377,8 @@ Advanced capabilities for complex workflows.
 | Dynamic Workflows | Deterministic multi-agent orchestration via `/workflows` (v2.1.154) | Comprehensive audits, migrations, scale-out |
 | Scheduled Tasks | Recurring tasks with `/loop` and cron tools | Automated recurring workflows |
 | Chrome Integration | Browser automation via headless Chromium | Web testing and scraping |
-| Remote Control (expanded) | Connection methods, security, comparison table | Remote session management |
+| Remote Control (expanded) | Connection methods, security, comparison table, device cards | Remote session management (no longer a research preview) |
+| Cross-Session Messaging | `SendMessage` / `ListAgents`, including `notify_when_idle` (v2.1.236) | Coordinating sessions on the same machine |
 | Keyboard Customization | Custom keybindings, chord support, contexts | Personalized shortcuts |
 | Desktop App (expanded) | Connectors, launch.json, enterprise features | Desktop integration |
 | | | |
@@ -448,6 +449,12 @@ Advanced capabilities for complex workflows.
 - Connection methods and protocols
 - Security considerations and best practices
 - Comparison table of remote access options
+- Out of research preview — a machine running `claude remote-control` appears as a device card in the Claude app's Code tab
+
+### Cross-Session Messaging
+- `SendMessage` between sessions on the same machine
+- `notify_when_idle` — one opt-in notice when the other session next goes idle (v2.1.236)
+- `ListAgents` reports the session's own name and lists live teammates (v2.1.239)
 
 ### Keyboard Customization
 - Custom keybindings configuration
@@ -888,8 +895,8 @@ Want to add more examples? Follow the structure:
 
 ---
 
-**Last Updated**: August 15, 2026
-**Claude Code Version**: 2.1.233
+**Last Updated**: August 25, 2026
+**Claude Code Version**: 2.1.245
 **Sources**:
 - https://code.claude.com/docs/en/overview
 - https://code.claude.com/docs/en/hooks

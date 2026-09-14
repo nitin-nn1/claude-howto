@@ -20,9 +20,12 @@ Slash commands are shortcuts that control Claude's behavior during an interactiv
 
 Built-in commands are shortcuts for common actions. There are **60+ built-in commands** and **10 bundled skills** available. Type `/` in Claude Code to see the full list, or type `/` followed by any letters to filter.
 
+> **Note**: Since v2.1.236, pressing Enter on a mistyped slash command — or on a command that is not available in the current session — reports an error instead of silently running the closest fuzzy match. Unambiguous prefixes and defined aliases still run as before.
+
 | Command | Purpose |
 |---------|---------|
 | `/add-dir <path>` | Add working directory |
+| `/advisor [model\|off]` | Configure the advisor. Opens as an interactive dialog; in the desktop app, Remote Control, and headless (`-p` / Agent SDK) sessions it takes a text form instead — bare `/advisor`, `/advisor <model>`, or `/advisor off` (v2.1.260+) |
 | `/agents` | Manage agent configurations |
 | `/branch [name]` | Switch into a copy of the conversation at this point, preserving the original (return to it with `/resume`) |
 | `/fork [prompt]` | Copy the current conversation into a new **background session** and keep working here; the two are independent from that point on and the copy gets its own row in `claude agents` (v2.1.212+). Except when the copy edits in place, Claude Code instructs it to create a worktree of its own before making code changes (isolation instruction requires v2.1.221+) |
@@ -38,7 +41,7 @@ Built-in commands are shortcuts for common actions. There are **60+ built-in com
 | `/copy [N]` | Copy assistant response to clipboard; `w` writes to file |
 | `/cost` | Typing-shortcut alias for `/usage` — opens the cost tab (v2.1.118+) |
 | `/desktop` | Continue in Desktop app (alias: `/app`) |
-| `/diff` | Interactive diff viewer for uncommitted changes |
+| `/diff` | Interactive diff viewer for uncommitted changes. In fullscreen rendering it instead opens a diff panel beside the conversation that stays open while you keep working — it lists changed files with added/removed line counts and refreshes every time Claude edits a file or runs a shell command; run `/diff` again or click `✕` to close it (v2.1.260+). The classic renderer opens the viewer in place of the prompt |
 | `/doctor` | Diagnose installation health — openable while Claude is responding; shows status icons; press `f` to auto-fix issues (enhanced in v2.1.116; layout refreshed to a flat tree with clearer icons in v2.1.178) |
 | `/effort [low\|medium\|high\|xhigh\|max\|auto]` | Set effort level via interactive arrow-key slider. Levels: `low` → `medium` → `high` → `xhigh` (new in v2.1.111) → `max`. Default is `high` on Opus 5, Sonnet 5, and Opus 4.8 (`xhigh` on Opus 4.7); `xhigh` needs Opus 5, Sonnet 5, Opus 4.8, or Opus 4.7; `max` works on Opus 5, Sonnet 5, Opus 4.8/4.7/4.6 and Sonnet 4.6. The menu also offers `ultracode` (not a model effort level — it sends `xhigh` and has Claude orchestrate dynamic workflows; session-only) |
 | `/exit` | Exit the REPL (alias: `/quit`) |
@@ -72,7 +75,7 @@ Built-in commands are shortcuts for common actions. There are **60+ built-in com
 | `/privacy-settings` | Privacy settings (Pro/Max only) |
 | `/release-notes` | View changelog |
 | `/recap` | Show session recap / summary when returning to a session (added v2.1.108) |
-| `/reload-plugins` | Reload active plugins. Since v2.1.221 most installs activate immediately, so this is only needed when the install summary says `Run /reload-plugins to activate.` |
+| `/reload-plugins` | Reload active plugins. Since v2.1.221 most installs activate immediately, so this is only needed when the install summary says `Run /reload-plugins to activate.` Available in headless sessions as of v2.1.260, so it also appears in the Claude Code Desktop and SDK command lists |
 | `/reload-skills` | Re-scan skill directories without restarting the session (added v2.1.152) |
 | `/remote-control` | Remote control from claude.ai (alias: `/rc`) |
 | `/remote-env` | Configure default remote environment |
@@ -84,6 +87,7 @@ Built-in commands are shortcuts for common actions. There are **60+ built-in com
 | `/schedule [description]` | Create/manage Cloud scheduled tasks |
 | `/scroll-speed <+N\|-N>` | Tune mouse-wheel scroll speed of the TUI live-preview pane with a live preview. Persists per-machine to `~/.claude/preferences.json` (added v2.1.139). |
 | `/security-review` | Analyze branch for security vulnerabilities |
+| `/skill-doctor` | Show which loaded skills go unused and what each one costs in context, so you can decide which to turn off. The report opens in the `/plugin` manager's **Stats** tab; in non-interactive `-p` mode it prints as text. Over Remote Control it replies `Skill usage reports are not available on this connection.` — run it in the terminal on the machine hosting the session (requires v2.1.252+) |
 | `/skills` | List available skills |
 | `/stats` | Typing-shortcut alias for `/usage` — opens the stats tab (daily usage, sessions, streaks) (v2.1.118+) |
 | `/stickers` | Order Claude Code stickers |
@@ -96,7 +100,6 @@ Built-in commands are shortcuts for common actions. There are **60+ built-in com
 | `/theme` | Open theme picker / manage custom themes (v2.1.118). Define custom themes via JSON in `~/.claude/themes/<name>.json` |
 | `/tui` | Toggle fullscreen TUI (text user interface) mode with flicker-free rendering (added v2.1.110) |
 | `/ultrareview` | Comprehensive cloud-based multi-agent code review (added v2.1.111). The preferred invocation is now `/code-review ultra`; `/ultrareview` remains as an alias. Includes 3 free runs on Pro and Max, then requires usage credits |
-| `/undo` | Alias for `/rewind` (added v2.1.108) |
 | `/upgrade` | Open upgrade page for higher plan tier |
 | `/usage` | Canonical usage dashboard (v2.1.118) — combines plan usage limits, rate limits, cost, and daily session stats. `/cost` and `/stats` are typing-shortcut aliases that open specific tabs |
 | `/voice` | Toggle push-to-talk voice dictation |
@@ -114,6 +117,7 @@ These skills ship with Claude Code and are invoked like slash commands:
 | `/claude-api` | Load Claude API reference for project language |
 | `/dataviz` | Chart and dashboard design guidance with a runnable color-palette validator (v2.1.198) |
 | `/debug [description]` | Enable debug logging |
+| `/design [description]` | Create a **design canvas** — a multi-artboard visual design (UI mockups, screen flows, landing pages, posters) published as an artifact and refined visually rather than in code. Use it instead of hand-writing HTML when the layout is what you want to iterate on. Research preview; requires v2.1.233+ and a Pro, Max, Team, or Enterprise plan |
 | `/loop [interval] <prompt>` | Run prompt repeatedly on interval |
 | `/code-review [low\|medium\|high\|xhigh\|max\|ultra] [--fix] [--comment] [pr#\|branch\|path]` | Review the current diff — or a PR number, branch, or path you pass — for correctness bugs. Pass `--fix` to apply findings, `--comment` to post them as inline GitHub PR comments, or `ultra` to run a deep cloud review; with `ultra` on a `github.com` PR target, `--post` preselects posting the findings to the PR. With no effort level given, the review reuses the last level you typed (v2.1.223). Originally absorbed `/simplify` in v2.1.146, but `/simplify` returned as a distinct command in v2.1.154 |
 | `/simplify` | Run a cleanup-only review (reuse / simplification / efficiency / altitude) and apply the fixes; does **not** hunt for bugs — use `/code-review` for that. Briefly an alias of `/code-review --fix` (v2.1.152), it became cleanup-only in v2.1.154 |
@@ -125,12 +129,13 @@ These skills ship with Claude Code and are invoked like slash commands:
 | `/output-style` | Removed in v2.1.91 (deprecated v2.1.73) — use `/config` → Output style, or the `outputStyle` setting |
 | `/pr-comments` | Removed in v2.1.91 — ask Claude directly to view PR comments |
 | `/vim` | Removed in v2.1.92 — use /config → Editor mode |
+| `/undo` | No longer listed in the official commands reference as of v2.1.245 (it was added as an alias for `/rewind` in v2.1.108) — use `/rewind` or press `Esc` twice |
 
 ### Recent Changes
 
 - `/fork` and `/subtask` swapped roles in **v2.1.212**. `/fork` now copies the conversation into a new independent background session; the forked-subagent behavior it used to have moved to the new `/subtask` command. History: `/fork` was an alias for `/branch` from v2.1.77 to v2.1.161; from v2.1.161 to v2.1.211 it started a forked subagent (what `/subtask` does now). When agent view is turned off, `/subtask` is unavailable and `/fork` keeps the forked-subagent behavior
 - `/resume` (no arguments) opens a picker of past sessions — including ones removed from the visible list — and resumes the chosen one as a background session (v2.1.212)
-- `/output-style` deprecated (v2.1.73) and removed (v2.1.91) — output styles are still available via `/config` → Output style or the `outputStyle` setting; the built-ins are Default, Proactive, Explanatory, and Learning
+- `/output-style` deprecated (v2.1.73) and removed (v2.1.91) — output styles are still available via `/config` → Output style or the `outputStyle` setting; the built-ins are Default, Proactive, Explanatory, Learning, and Concise (added in v2.1.237)
 - `/review` became a full alias of `/code-review` — same targets, effort levels, and flags (v2.1.223). History: it first moved onto the `/code-review medium` engine in v2.1.186 while remaining PR-only
 - `/effort` command added; `max` level available on Opus 4.6+ (originally Opus 4.6-only)
 - `/voice` command added for push-to-talk voice dictation
@@ -148,7 +153,7 @@ These skills ship with Claude Code and are invoked like slash commands:
 - `/tui` command added for flicker-free fullscreen TUI rendering (v2.1.110)
 - `/focus` command added for focus view toggle; `Ctrl+O` now only toggles verbose transcript (v2.1.110)
 - `/recap` command added to manually trigger session context recap (v2.1.108)
-- `/undo` added as alias for `/rewind` (v2.1.108)
+- `/undo` added as alias for `/rewind` (v2.1.108); it no longer appears in the official commands reference as of v2.1.245 — use `/rewind` or `Esc Esc`
 - `/proactive` added as alias for `/loop` (v2.1.105)
 - `/effort` gained interactive arrow-key slider and new `xhigh` level between `high` and `max`; default effort raised to `xhigh` for Opus 4.7 plans (v2.1.111). On Opus 4.8 the default is `high` (v2.1.154); Opus 5 also defaults to `high` (v2.1.219)
 - `/ultrareview` added for comprehensive cloud-based multi-agent code review (v2.1.111)
@@ -167,6 +172,8 @@ These skills ship with Claude Code and are invoked like slash commands:
 - `/code-review ultra` became the preferred entry point for cloud multi-agent review; `/ultrareview` stays as an alias (v2.1.223)
 - `/code-review` at `high`, `xhigh`, and `max` effort now runs in a background agent like the other levels (v2.1.232)
 - The startup tip suggesting you create custom subagents, and the matching nudge in the `/powerup` tour, were removed (v2.1.232)
+- `/permissions` can now be opened while Claude is working — rule changes apply to the rest of the current turn (v2.1.234)
+- `/add-dir <path>` can now be used while Claude is working; the `/add-dir`, `/autocompact`, `/theme`, `/help`, `/config`, and `/advisor` dialogs open mid-turn **in the fullscreen TUI**, instead of queuing until Claude finishes responding (`/bug` already opened immediately, since v2.1.232) (v2.1.234)
 
 ### `/goal` — Session-Level Completion Condition
 
@@ -182,6 +189,8 @@ Claude: Goal registered. I'll work toward this until you clear it.
 User: start by listing the REST endpoints
 Claude: [does the work, panel updates]
 ```
+
+**Check-in on stalled background tasks (v2.1.234):** while a goal is active, if a background task makes no progress for 30+ minutes, Claude checks in with a status update instead of silently continuing. Tune the threshold (in minutes) with the `CLAUDE_CODE_GOAL_CHECKIN_MINUTES` environment variable, or set it to `0` to disable check-ins entirely.
 
 ### `/team-onboarding` — Teammate Ramp-Up Guide
 
@@ -641,13 +650,16 @@ If both exist with the same name, the **skill takes precedence**. Remove one or 
 
 ---
 
-**Last Updated**: August 15, 2026
-**Claude Code Version**: 2.1.233
+**Last Updated**: September 6, 2026
+**Claude Code Version**: 2.1.263
 **Sources**:
 - https://code.claude.com/docs/en/skills
+- https://code.claude.com/docs/en/slash-commands
 - https://code.claude.com/docs/en/interactive-mode
+- https://code.claude.com/docs/en/interactive-mode#review-changes-with-diff
 - https://code.claude.com/docs/en/changelog
 - https://code.claude.com/docs/en/commands
+- https://code.claude.com/docs/en/whats-new/2026-w34
 - https://code.claude.com/docs/en/model-config
 - https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md
 - https://github.com/anthropics/claude-code/releases/tag/v2.1.139
