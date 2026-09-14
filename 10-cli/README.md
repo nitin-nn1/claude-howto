@@ -54,10 +54,10 @@ The older JavaScript bundle is still produced for Windows and for environments t
 | `claude agents` | Open the **Agent View** (Research Preview, v2.1.139+) — multi-session manager listing every Claude Code session with its status. See [Agent View](#agent-view-claude-agents-v21139) below. | `claude agents` |
 | `claude auto-mode defaults` | Print auto mode default rules as JSON | `claude auto-mode defaults` |
 | `claude auto-mode reset` | Restore default auto-mode configuration, with a confirmation prompt (`--yes` to skip) (v2.1.212) | `claude auto-mode reset --yes` |
-| `claude remote-control` | Start Remote Control server | `claude remote-control` |
+| `claude --remote-control [name]` | Start Remote Control (a flag, not a subcommand; alias `--rc`) | `claude --rc` |
 | `claude plugin` | Manage plugins (install, enable, disable) | `claude plugin install my-plugin` |
-| `claude plugin init <name>` | Scaffold a new plugin in `.claude/skills` — auto-loads with no marketplace required (v2.1.157+) | `claude plugin init my-plugin` |
-| `claude plugin tag <version>` | Create a release git tag for a plugin with version validation (v2.1.118+) | `claude plugin tag v0.3.0` |
+| `claude plugin init <name>` | Scaffold a new plugin at `~/.claude/skills/<name>/` (user-global) — auto-loads in the next session as `<name>@skills-dir`, no marketplace required (v2.1.157+) | `claude plugin init my-plugin` |
+| `claude plugin tag [path]` | Create a `{name}--v{version}` release git tag for the plugin at `[path]`, validating that `plugin.json` and any enclosing marketplace entry agree (v2.1.118+) | `claude plugin tag ./my-plugin` |
 | `claude install [version]` | Install a specific native-binary version. Accepts `stable`, `latest`, or an explicit version string | `claude install 2.1.131` |
 | `claude project purge [path]` | Delete all local Claude Code state for a project (transcripts, tasks, debug logs, file-edit history, prompt history, and `~/.claude.json` entry). Omit `[path]` for an interactive picker. Flags: `--dry-run` to preview, `-y/--yes` to skip confirmation, `-i/--interactive` to confirm each item, `--all` for every project (v2.1.126+) | `claude project purge ~/work/repo --dry-run` |
 | `claude plugin prune` | Remove orphaned auto-installed plugin dependencies (parent plugin gone). `plugin uninstall --prune` does the same cascade after uninstalling a target (v2.1.121+) | `claude plugin prune` |
@@ -78,14 +78,16 @@ The older JavaScript bundle is still produced for Windows and for environments t
 | `-w, --worktree` | Start in isolated git worktree. Accepts a GitLab merge-request URL as well as a GitHub PR URL since v2.1.233 | `claude -w` |
 | `-n, --name` | Session display name | `claude -n "auth-refactor"` |
 | `--from-pr <url-or-number>` | Resume sessions linked to a pull/merge request. Accepts GitHub (cloud + Enterprise), GitLab MR, and Bitbucket PR URLs since v2.1.119; previously GitHub.com only | `claude --from-pr 42` or `claude --from-pr https://gitlab.example.com/org/repo/-/merge_requests/17` |
-| `--remote "task"` | Create web session on claude.ai | `claude --remote "implement API"` |
+| `--cloud [description\|session_id\|url]` | Create a cloud session on claude.ai with the given description, or attach to an existing one by session ID or claude.ai/code URL | `claude --cloud "implement API"` |
+| `--remote "task"` | **Deprecated alias for `--cloud`**, including the existing-session form. Use `--cloud` instead | `claude --remote "implement API"` |
 | `--remote-control, --rc` | Interactive session with Remote Control | `claude --rc` |
-| `--teleport` | Resume a web session locally. Bare form opens a picker of your web sessions; the v2.1.223 changelog also shows a `claude --teleport <session id>` form, which the CLI reference does not document. Requires a claude.ai subscription | `claude --teleport` |
+| `--teleport [session]` | Resume a web session locally. Bare form opens a picker of your web sessions; pass a session ID to resume that session directly. Requires a claude.ai subscription | `claude --teleport` |
 | `--teammate-mode` | Agent team display mode | `claude --teammate-mode tmux` |
 | `--bare` | Minimal mode (skip hooks, skills, plugins, MCP, auto memory, CLAUDE.md) | `claude --bare` |
 | `--safe-mode` | Start with all customizations disabled (CLAUDE.md, plugins, skills, hooks, MCP) to isolate config problems; also `CLAUDE_CODE_SAFE_MODE=1` (v2.1.169) | `claude --safe-mode` |
+| `--restricted` | Lock the session down for untrusted or shared use: removes the built-in command- and code-running tools and WebFetch, ignores user/project/local settings, confines file tools to the working directories, and refuses `bypassPermissions` and cloud sessions. Also `CLAUDE_CODE_RESTRICTED=1` (v2.1.248+) | `claude --restricted -p "summarize this repo"` |
 | `--permission-mode auto` | Start in auto permission mode (replaces the removed `--enable-auto-mode` flag, gone since v2.1.111) | `claude --permission-mode auto` |
-| `--channels` | Subscribe to MCP channel plugins | `claude --channels discord,telegram` |
+| `--channels` | Subscribe to MCP channel plugins. Entries must be tagged `plugin:<name>@<marketplace>`; bare names are rejected | `claude --channels plugin:discord@my-marketplace` |
 | `--chrome` / `--no-chrome` | Enable/disable Chrome browser integration | `claude --chrome` |
 | `--effort` | Set thinking effort level | `claude --effort high` |
 | `--init` / `--init-only` | Run initialization hooks | `claude --init` |
@@ -93,6 +95,26 @@ The older JavaScript bundle is still produced for Windows and for environments t
 | `--disable-slash-commands` | Disable all skills and slash commands | `claude --disable-slash-commands` |
 | `--no-session-persistence` | Disable session saving (print mode) | `claude -p --no-session-persistence "query"` |
 | `--exclude-dynamic-system-prompt-sections` | Exclude dynamic sections from the system prompt for better prompt cache hit rates | `claude -p --exclude-dynamic-system-prompt-sections "query"` |
+
+### Restricted Mode (`--restricted`, v2.1.248+)
+
+`--restricted` (or `CLAUDE_CODE_RESTRICTED=1`) is for running `claude` on behalf of someone whose input you do not control — an evaluation harness on a shared machine, a CI job triggered by an outside contributor, a demo box. It applies all of the following:
+
+- **Removes the tools that run commands or code** — Bash, PowerShell, and the REPL — plus WebFetch, unless `--tools` explicitly names them.
+- **Ignores user, project, and local settings files.** Managed settings and an explicit `--settings` file still apply, so an administrator keeps control while a checked-in `.claude/settings.json` cannot widen the sandbox.
+- **Confines the file tools to the working directories**, so reads and writes cannot escape the paths you started in.
+- **Refuses `bypassPermissions`**, whichever way it is requested.
+- **Refuses to create cloud sessions**, so a restricted run cannot push work off the machine.
+
+```bash
+# Evaluation harness: no shell, no network fetches, no settings inheritance
+claude --restricted -p "summarize the architecture of this repo"
+
+# Same lockdown, but deliberately re-enable one tool
+claude --restricted --tools WebFetch -p "check the linked RFC"
+```
+
+> **Note**: `--restricted` is a coarser lock than `--permission-mode`. It removes tools outright rather than prompting for them, so a restricted session cannot be widened from inside the session.
 
 ### Interactive vs Print Mode
 
@@ -166,6 +188,7 @@ claude --model opusplan "design and implement the caching layer"
 | `--system-prompt-file` | Load prompt from file (print mode) | `claude -p --system-prompt-file ./prompt.txt "query"` |
 | `--append-system-prompt` | Append to default prompt | `claude --append-system-prompt "Always use TypeScript"` |
 | `--append-subagent-system-prompt` | Append text to every subagent's system prompt (non-interactive) | `claude -p --append-subagent-system-prompt "Cite sources" "query"` |
+| `--append-subagent-system-prompt-file` | (v2.1.261) Load that appended text from a file instead, for prompts too long to pass on the command line. Non-interactive only, and **cannot be combined** with `--append-subagent-system-prompt` | `claude -p --append-subagent-system-prompt-file ./subagent-rules.txt "query"` |
 
 ### System Prompt Examples
 
@@ -200,6 +223,7 @@ claude -p --system-prompt-file ./prompts/code-reviewer.txt "review main.py"
 | `--dangerously-skip-permissions` | Skip all permission prompts | `claude --dangerously-skip-permissions` |
 | `--permission-mode` | Begin in specified permission mode | `claude --permission-mode auto` |
 | `--permission-prompt-tool` | MCP tool for permission handling | `claude -p --permission-prompt-tool mcp_auth "query"` |
+| `--permission-prompts` | (v2.1.259) Who answers permission prompts in print mode. Default `host` sends them to the Agent SDK host or the `--permission-prompt-tool` tool; pass `none` when nobody can answer and Claude Code denies them instead | `claude -p --permission-prompts none "query"` |
 
 > **v2.1.111 update**: `--enable-auto-mode` was removed; auto mode is now in the `Shift+Tab` cycle by default — use `--permission-mode auto` to start in it directly.
 
@@ -285,7 +309,7 @@ claude --settings '{"model":"opus","verbose":true}' "complex task"
 |------|-------------|---------|
 | `--mcp-config` | Load MCP servers from JSON | `claude --mcp-config ./mcp.json` |
 | `--strict-mcp-config` | Only use specified MCP config | `claude --strict-mcp-config --mcp-config ./mcp.json` |
-| `--channels` | Subscribe to MCP channel plugins | `claude --channels discord,telegram` |
+| `--channels` | Subscribe to MCP channel plugins. Entries must be tagged `plugin:<name>@<marketplace>`; bare names are rejected | `claude --channels plugin:discord@my-marketplace` |
 
 ### MCP Examples
 
@@ -369,7 +393,7 @@ claude project purge --all --interactive
 | `--plugin-dir` | Load plugins from directory (repeatable) | `claude --plugin-dir ./my-plugin` |
 | `--effort` | Set thinking effort level | `claude --effort high` |
 | `--bare` | Minimal mode (skip hooks, skills, plugins, MCP, auto memory, CLAUDE.md) | `claude --bare` |
-| `--channels` | Subscribe to MCP channel plugins | `claude --channels discord` |
+| `--channels` | Subscribe to MCP channel plugins (tagged `plugin:<name>@<marketplace>`) | `claude --channels plugin:discord@my-marketplace` |
 | `--tmux` | Create tmux session for worktree | `claude --tmux` |
 | `--fork-session` | Create new session ID when resuming | `claude --resume abc --fork-session` |
 | `--max-budget-usd` | Maximum spend (print mode); also halts background subagents when hit (v2.1.217) | `claude -p --max-budget-usd 5.00 "query"` |
@@ -398,6 +422,8 @@ claude --ide "help me with this file"
 ## Agents Configuration
 
 The `--agents` flag accepts a JSON object defining custom subagents for a session.
+
+As of **v2.1.243**, `--agents` no longer silently ignores invalid JSON or an invalid agent definition — it exits with a clear error, matching how `--mcp-config` already behaved.
 
 ### Agents JSON Format
 
@@ -767,6 +793,7 @@ Claude Code supports multiple models with different capabilities:
 | Opus 4.8 | `claude-opus-4-8` | 1M tokens | Previous flagship Opus, still selectable; adaptive effort levels `low → max`; default effort `high` (v2.1.154) |
 | Sonnet 4.6 | `claude-sonnet-4-6` | 1M tokens | Balanced speed and capability; default effort for Pro/Max subscribers raised from `medium` to `high` in v2.1.117 |
 | Haiku 4.5 | `claude-haiku-4-5` | 200K tokens | Fastest, best for quick tasks; no effort levels |
+| Fable 5.1 | `claude-fable-5-1` | — | Current Fable model; the `fable` alias resolves to it (v2.1.257) |
 | Fable 5 | `claude-fable-5` | — | Mythos-class model, made safe for general use (v2.1.170) |
 
 ### Model Selection
@@ -783,6 +810,8 @@ claude --model opusplan "design and implement the API"
 # Toggle fast mode during session
 /fast
 ```
+
+> **Fable 5.1 and the `fable` alias (v2.1.257)**: Fable 5.1 (`claude-fable-5-1`) ships in **v2.1.257**, and the `fable` alias now resolves to it rather than to Fable 5. The official model-config page says Fable 5.1 "requires Claude Code v2.1.255 or later", but 2.1.255 was never published — v2.1.257 is the first release users can actually install it with. On a Claude apps gateway, `fable` and `best` still resolve to **Fable 5**; pick 5.1 explicitly in `/model` there.
 
 > **Fast Mode runs on Opus 5 and Opus 4.8 (v2.1.219)**: As of v2.1.219, `/fast` applies to **Opus 5 and Opus 4.8** — Opus 4.7 was removed from fast mode. Opus 5's fast mode is billed at $10/$50 per Mtok. Fast mode first moved to Opus 4.8 in v2.1.154 (about 2× the standard rate for ~2.5× the output speed), having flipped from Opus 4.6 to Opus 4.7 in v2.1.142. The `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE` env var was **deprecated in v2.1.154 and removed on 2026-06-01**; fast mode is no longer available on Opus 4.6 — select Opus 5 or Opus 4.8 instead.
 
@@ -811,6 +840,7 @@ The "ultrathink" keyword in prompts activates deep reasoning. The `/effort` menu
 |----------|-------------|
 | `ANTHROPIC_API_KEY` | API key for authentication |
 | `ANTHROPIC_MODEL` | Override default model |
+| `ANTHROPIC_DEFAULT_MODEL` | (v2.1.236) Sets the model new sessions start on. Unlike `ANTHROPIC_MODEL`, which pins the model, a `/model` pick still overrides this value **and persists across restarts** — that contrast is the point of the variable. |
 | `ANTHROPIC_CUSTOM_MODEL_OPTION` | Custom model option for API |
 | `ANTHROPIC_DEFAULT_OPUS_MODEL` | Override default Opus model ID |
 | `ANTHROPIC_DEFAULT_SONNET_MODEL` | Override default Sonnet model ID |
@@ -875,9 +905,10 @@ The "ultrathink" keyword in prompts activates deep reasoning. The `/effort` menu
 | `CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT` | Set to `1` to restore pre-v2.1.223 auto-compact behavior on unrecognized model IDs (v2.1.223) |
 | `CLAUDE_CODE_WORKFLOW_PREFIX_STAGGER_MS` | Set to `0` to disable prefix staggering on dynamic-workflow fan-out (v2.1.229) |
 | `CLAUDE_CODE_USER_DIALOG_TIMEOUT_MS` | Overrides the `dialogExpiry` setting (v2.1.224) |
+| `CLAUDE_CODE_PROJECT_DIR_NAME` | Overrides the per-project transcript directory name Claude Code derives from the project path (v2.1.234) |
 
-> **These seven rows are changelog-sourced.** The CLI reference page has no dedicated
-> environment-variable section, so they are documented from the v2.1.221–v2.1.233
+> **These eight rows are changelog-sourced.** The CLI reference page has no dedicated
+> environment-variable section, so they are documented from the v2.1.221–v2.1.234
 > changelog entries rather than a reference page.
 
 > **`CLAUDE_CODE_DISABLE_1M_CONTEXT` widened in v2.1.223**: it now holds **every** Claude model with a native 1M-token window to 200K via auto-compaction, not just a fixed list of model IDs.
@@ -899,6 +930,14 @@ These keys live in a `settings.json` file (`~/.claude/settings.json` for user sc
 | `sandbox.filesystem.disabled` | (v2.1.216) Skips filesystem sandboxing while keeping network egress control enforced. For workflows where file sandboxing breaks tooling but network policy must stay enforced. |
 | `emojiCompletionEnabled` | (v2.1.217) Enables emoji shortcode autocomplete in the prompt input (e.g. typing `:heart:` inserts ❤️). Set `false` to disable. |
 | `workflowSizeGuideline` | (v2.1.219) Sets the advisory Dynamic workflow size guideline from any settings file. The guideline is guidance Claude aims for, not a hard cap — the default is medium (aim for fewer than 15 agents), and other sizes or unrestricted can be selected. While this key is set, the "Dynamic workflow size" row is hidden in `/config`. Distinct from `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`, which is an enforced concurrency limit. |
+| `spellcheck` | (v2.1.235) Underlines misspelled words in the prompt input using whichever of `aspell`, `hunspell`, or `ispell` is on your `PATH`, tried in that order. Object-valued — `{"enabled": true, "language": "en_GB"}` — and off by default. **Read from user settings, the `--settings` flag, and managed settings only**: a `spellcheck` block in a project `.claude/settings.json` or `.claude/settings.local.json` is ignored. See also [Advanced Features → Additional Per-User Settings](../09-advanced-features/README.md#additional-per-user-settings). |
+| `modelPicker` | (v2.1.243) Choose which models the `/model` picker lists, in your own order and with your own labels. One of the few settings that **replaces rather than merges** across settings layers. |
+| `promptCacheTtl` | (v2.1.243) Choose the prompt cache lifetime for the main conversation. |
+| `subagentPromptCacheTtl` | (v2.1.243) The same choice for subagents and other requests outside the main conversation. |
+| `modelPricing` | (v2.1.243) **Managed setting.** Supplies your organization's contracted rates so `/cost`, the status line, and telemetry report those instead of list price. |
+| `keybindingFlavor` | **Deprecated since v2.1.261 and has no effect.** The prompt's word-editing keys always follow readline conventions, as Bash does: `Ctrl+W` deletes back to whitespace, `Alt+F` and `Alt+D` stop at word end, and punctuation separates words. Claude Code still accepts the key, so a settings file that sets it stays valid. (In v2.1.238–v2.1.260 it chose between `"classic"` and `"readline"`.) |
+| `bashOutputMaxChars` | (v2.1.261) How many characters of a **successful** Bash or PowerShell command's output Claude receives inline, up to 128K. Past the limit Claude Code saves the output to a file and Claude gets a short preview plus the path. Setting it makes Claude Code ignore `BASH_MAX_OUTPUT_LENGTH`. |
+| `taskOutputMaxChars` | (v2.1.261) How many characters of a **background task's** output Claude receives inline when reading it with the `TaskOutput` tool, up to 128K. For a longer finished task Claude receives the most recent characters. Setting it makes Claude Code ignore `TASK_MAX_OUTPUT_LENGTH`. |
 
 ```json
 {
@@ -1012,8 +1051,8 @@ claude -p --output-format json "query"
 
 ---
 
-**Last Updated**: August 15, 2026
-**Claude Code Version**: 2.1.233
+**Last Updated**: September 6, 2026
+**Claude Code Version**: 2.1.263
 **Sources**:
 - https://code.claude.com/docs/en/cli-reference
 - https://code.claude.com/docs/en/env-vars
@@ -1035,4 +1074,7 @@ claude -p --output-format json "query"
 - https://code.claude.com/docs/en/overview
 - https://code.claude.com/docs/en/sub-agents
 - https://code.claude.com/docs/en/headless
+- https://code.claude.com/docs/en/cli-reference.md
+- https://code.claude.com/docs/en/settings.md
+- https://code.claude.com/docs/en/settings-reference
 **Compatible Models**: Claude Fable 5, Claude Opus 5, Claude Sonnet 5, Claude Sonnet 4.6, Claude Opus 4.8, Claude Haiku 4.5

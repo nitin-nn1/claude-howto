@@ -608,7 +608,7 @@ claude plugin uninstall <name>               # Gỡ bỏ plugin
 claude plugin list                           # Liệt kê các plugin đã cài đặt
 claude plugin enable <name>                  # Kích hoạt plugin đã bị vô hiệu hóa
 claude plugin disable <name>                 # Vô hiệu hóa plugin
-claude plugin validate                       # Xác thực cấu trúc plugin
+claude plugin validate <path>                # Xác thực cấu trúc plugin tại <path>
 ```
 
 ## Các Phương Thức Cài Đặt / Installation Methods
@@ -837,7 +837,7 @@ Workflow PR review hoàn chỉnh với các kiểm tra bảo mật, testing, và
 
 2. **Xem chi tiết plugin:**
    ```bash
-   /plugin info plugin-name
+   claude plugin details plugin-name
    ```
 
 3. **Cài đặt một plugin:**
@@ -860,13 +860,17 @@ Workflow PR review hoàn chỉnh với các kiểm tra bảo mật, testing, và
 ### Liệt Kê Các Plugins Đã Cài Đặt
 
 ```bash
-/plugin list --installed
+/plugin list             # tất cả plugin đã cài đặt
+/plugin list --enabled   # chỉ các plugin đang bật
+/plugin list --disabled  # chỉ các plugin đang tắt
 ```
 
 ### Cập Nhật Một Plugin
 
+Dùng dạng CLI — đây là dạng được ghi trong tài liệu tại [`plugin update`](https://code.claude.com/docs/en/plugins-reference) và cũng là dạng mà chính Claude Code hướng dẫn bạn khi có bản cập nhật:
+
 ```bash
-/plugin update plugin-name
+claude plugin update plugin-name
 ```
 
 ### Vô Hiệu Hóa/Kích Hoạt Một Plugin
@@ -929,7 +933,7 @@ Các tính năng Claude Code sau hoạt động cùng với plugins:
 - Xác minh các đường dẫn trong `plugin.json` khớp với cấu trúc thư mục thực tế
 - Kiểm tra quyền file: `chmod +x scripts/`
 - Review cú pháp file thành phần
-- Kiểm tra logs: `/plugin debug plugin-name`
+- Kiểm tra kho thành phần: `claude plugin details plugin-name`
 
 ### MCP Connection Failed
 - Xác minh các biến môi trường được đặt đúng
@@ -938,9 +942,9 @@ Các tính năng Claude Code sau hoạt động cùng với plugins:
 - Review cấu hình MCP trong thư mục `mcp/`
 
 ### Commands Not Available After Install
-- Đảm bảo plugin được cài đặt thành công: `/plugin list --installed`
-- Kiểm tra nếu plugin được kích hoạt: `/plugin status plugin-name`
-- Khởi động lại Claude Code: `exit` và mở lại
+- Đảm bảo plugin được cài đặt thành công: `/plugin list`
+- Kiểm tra nếu plugin được kích hoạt: `/plugin list --enabled`
+- Kiểm tra xem đã hoạt động chưa — xem hướng dẫn tóm tắt cài đặt trong [Các Phương Thức Cài Đặt](#các-phương-thức-cài-đặt--installation-methods): `Plugin is now active.` không cần làm gì thêm, `Run /reload-plugins to activate.` nghĩa là chạy lệnh đó (không cần khởi động lại)
 - Kiểm tra xung đột đặt tên với các lệnh hiện có
 
 ### Hook Execution Issues
@@ -961,9 +965,10 @@ Các tính năng Claude Code sau hoạt động cùng với plugins:
 
 ---
 
-**Cập Nhật Lần Cuối**: Ngày 15 tháng 8 năm 2026
-**Phiên Bản Claude Code**: 2.1.233
+**Cập Nhật Lần Cuối**: Ngày 2 tháng 9 năm 2026
+**Phiên Bản Claude Code**: 2.1.257
 **Nguồn**:
 - https://code.claude.com/docs/en/discover-plugins
+- https://code.claude.com/docs/en/plugins-reference
 - https://code.claude.com/docs/en/settings
-**Các Mô Hình Tương Thích**: Claude Sonnet 4.6, Claude Opus 4.6, Claude Haiku 4.5
+**Các Mô Hình Tương Thích**: Claude Fable 5, Claude Opus 5, Claude Sonnet 5, Claude Sonnet 4.6, Claude Opus 4.8, Claude Haiku 4.5

@@ -93,7 +93,7 @@ sequenceDiagram
 | **Project** | `.claude/skills/<skill-name>/SKILL.md` | Team | Yes (via git) | Team standards |
 | **Plugin** | `<plugin>/skills/<skill-name>/SKILL.md` | Where enabled | Depends | Bundled with plugins |
 
-When skills share the same name across levels, higher-priority locations win: **enterprise > project > personal**. Project skills override personal ones by default; the `skillOverrides` setting (v2.1.129+) tunes that behavior — see [Controlling Skill Override Behavior](#controlling-skill-override-behavior-skilloverrides). Plugin skills use a `plugin-name:skill-name` namespace, so they cannot conflict.
+When skills share the same name across levels, higher-priority locations win: **enterprise > personal > project**. Personal skills override project ones by default; the `skillOverrides` setting (v2.1.129+) tunes that behavior — see [Controlling Skill Override Behavior](#controlling-skill-override-behavior-skilloverrides). Plugin skills use a `plugin-name:skill-name` namespace, so they cannot conflict.
 
 > **Subagent skill discovery (v2.1.133+)**: Subagents now discover project, user, and plugin skills via the Skill tool the same way the main session does. Earlier versions limited subagents to their own embedded set, which meant skill+subagent workflows quietly degraded; from v2.1.133 the same skill catalog is visible to both.
 
@@ -138,10 +138,12 @@ Provide clear, step-by-step guidance for Claude.
 Show concrete examples of using this Skill.
 ```
 
-### Required Fields
+### Recommended Fields
 
-- **name**: lowercase letters, numbers, hyphens only (max 64 characters). Cannot contain "anthropic" or "claude".
-- **description**: what the Skill does AND when to use it (max 1024 characters). This is critical for Claude to know when to activate the skill.
+- **description** (recommended): what the Skill does AND when to use it. If omitted, Claude Code uses the first paragraph of markdown content. The combined `description` + `when_to_use` text is truncated at **1,536 characters** in the skill listing (configurable via `skillListingMaxDescChars`). This is what Claude matches on to decide when to activate the skill.
+- **name** (optional): defaults to the skill's **directory name**. When supplied, it sets the display name — lowercase letters, numbers, hyphens only (max 64 characters), and cannot contain "anthropic" or "claude". For plugin skills, `name` also sets the last segment of the command.
+
+All SKILL.md frontmatter fields are optional; `description` is the only one that is recommended.
 
 ### Optional Frontmatter Fields
 
@@ -173,7 +175,8 @@ paths: "src/api/**/*.ts"               # Glob patterns limiting when skill activ
 | Field | Description |
 |-------|-------------|
 | `name` | Lowercase letters, numbers, hyphens only (max 64 chars). Cannot contain "anthropic" or "claude". |
-| `description` | What the Skill does AND when to use it (max 1024 chars). Critical for auto-invocation matching. |
+| `description` | What the Skill does AND when to use it. The combined `description` + `when_to_use` text is truncated at 1,536 chars in the skill listing (configurable via `skillListingMaxDescChars`). Critical for auto-invocation matching. |
+| `when_to_use` | Additional context for when Claude should invoke the skill. Appended to `description` in the skill listing and counts toward the 1,536-character cap. |
 | `argument-hint` | Hint shown in the `/` autocomplete menu (e.g., `"[filename] [format]"`). |
 | `disable-model-invocation` | `true` = only the user can invoke via `/name`. Claude will never auto-invoke. |
 | `user-invocable` | `false` = hidden from the `/` menu. Only Claude can invoke it automatically. |
@@ -187,6 +190,12 @@ paths: "src/api/**/*.ts"               # Glob patterns limiting when skill activ
 | `shell` | Shell used for `` !`command` `` substitutions and scripts: `bash` (default) or `powershell`. |
 | `hooks` | Hooks scoped to this skill's lifecycle (same format as global hooks). |
 | `paths` | Glob patterns that limit when the skill is auto-activated. Comma-separated string or YAML list. Same format as path-specific rules. |
+| `arguments` | Declares the arguments the skill accepts, for autocomplete and argument substitution. |
+| `metadata` | Free-form key/value map for your own bookkeeping (e.g. `version`, `author`). Claude Code passes it through. |
+| `license` | License identifier for the skill (e.g. `MIT`). |
+| `compatibility` | Free-text compatibility statement, up to 500 characters. Claude Code accepts it but does not act on it. |
+
+> **Note**: Only `name`, `description`, `license`, `compatibility`, `metadata`, and `allowed-tools` are valid for skills uploaded to claude.ai or created through the Skills API. The other fields in this table are Claude Code-specific.
 
 Since v2.1.218, boolean frontmatter fields also accept `yes`/`no`, `on`/`off`, and `1`/`0` (case-insensitive) in addition to `true`/`false`.
 
@@ -636,7 +645,7 @@ Can you help me review this code for security issues?
 
 ### Updating a Skill
 
-Edit the `SKILL.md` file directly. Changes take effect on next Claude Code startup.
+Edit the `SKILL.md` file directly, then run `/reload-skills` (v2.1.152+) to re-scan the skill directories. Restarting Claude Code also works, but is not required — skills in `--add-dir` directories are picked up live, and a `SessionStart` hook returning `reloadSkills: true` triggers the same re-scan.
 
 ```bash
 # Personal Skill
@@ -750,7 +759,7 @@ Move detailed reference material to separate files that Claude loads as needed.
 | YAML errors | Check `---` markers, indentation, no tabs |
 | Skills conflict | Use distinct trigger terms in descriptions |
 | Scripts not running | Check permissions: `chmod +x scripts/*.py` |
-| Claude doesn't see all skills | Too many skills; check `/context` for warnings |
+| Claude doesn't see all skills | Too many skills; check `/context` for warnings, then run `/skill-doctor` (v2.1.252+) to see which skills go unused and what they cost |
 
 ### Skill Not Triggering
 
@@ -888,10 +897,11 @@ Once you start building skills seriously, two things become essential: a library
 
 ---
 
-**Last Updated**: August 4, 2026
-**Claude Code Version**: 2.1.220
+**Last Updated**: September 6, 2026
+**Claude Code Version**: 2.1.263
 **Sources**:
 - https://code.claude.com/docs/en/skills
+- https://code.claude.com/docs/en/slash-commands
 - https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md
 - https://code.claude.com/docs/en/model-config
 **Compatible Models**: Claude Fable 5, Claude Opus 5, Claude Sonnet 5, Claude Sonnet 4.6, Claude Opus 4.8, Claude Haiku 4.5

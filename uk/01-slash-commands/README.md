@@ -114,7 +114,7 @@
 ### Останні зміни
 
 - `/fork` перейменовано на `/branch`, `/fork` залишено як аліас (v2.1.77)
-- `/output-style` застаріла (v2.1.73) і видалена (v2.1.91) — стилі виводу все ще доступні через `/config` → Output style або налаштування `outputStyle`; вбудовані: Default, Proactive, Explanatory, Learning
+- `/output-style` застаріла (v2.1.73) і видалена (v2.1.91) — стилі виводу все ще доступні через `/config` → Output style або налаштування `outputStyle`; вбудовані: Default, Proactive, Explanatory, Learning, Concise (додано у v2.1.237)
 - `/review` став повним псевдонімом `/code-review` — ті самі цілі, рівні зусиль і прапорці (v2.1.223). Історія: спершу він перейшов на рушій `/code-review medium` у v2.1.186, залишаючись доступним лише для PR
 - Додано команду `/effort` з рівнем `max` для Opus 4.6
 - Додано команду `/voice` для голосового вводу push-to-talk
@@ -576,10 +576,10 @@ Deploy the application to production:
 
 ---
 
-**Останнє оновлення**: 15 серпня 2026
-**Версія Claude Code**: 2.1.233
+**Останнє оновлення**: 19 серпня 2026
+**Версія Claude Code**: 2.1.235
 **Джерела**:
 - https://code.claude.com/docs/en/commands
-**Сумісні моделі**: Claude Sonnet 4.6, Claude Opus 4.6, Claude Haiku 4.5
+**Сумісні моделі**: Claude Fable 5, Claude Opus 5, Claude Sonnet 5, Claude Sonnet 4.6, Claude Opus 4.8, Claude Haiku 4.5
 
 *Частина серії посібників [Claude How To](../)*

@@ -20,9 +20,9 @@
 | **Skills** | 10 个内置 | 6 | 16 | [03-skills/README.md](03-skills/README.md) |
 | **Plugins** | - | 3 | 3 | [07-plugins/README.md](07-plugins/README.md) |
 | **MCP Servers** | 1 | 0 | 1 | [05-mcp/README.md](05-mcp/README.md) |
-| **Hooks** | 31 个事件 | 0 | 31 | [06-hooks/README.md](06-hooks/README.md) |
+| **Hooks** | 33 个事件 | 0 | 33 | [06-hooks/README.md](06-hooks/README.md) |
 | **Memory** | 7 种类型 | 3 | 10 | [02-memory/README.md](02-memory/README.md) |
-| **总计** | **115** | **28** | **143** | |
+| **总计** | **117** | **28** | **145** | |
 
 ---
 
@@ -140,10 +140,10 @@ Claude Code 提供 6 种权限模式，用来控制工具调用如何被授权�
 |-------|-------------|-------|-------|-------------|
 | **general-purpose** | 多步任务、研究 | 所有工具 | 继承当前模型 | 复杂研究、多文件任务 |
 | **Plan** | 实现规划 | Read、Glob、Grep、Bash | 继承当前模型 | 架构设计、规划 |
-| **Explore** | 代码库探索 | Read、Glob、Grep | Haiku 4.5 | 快速搜索、理解代码 |
-| **Bash** | 命令执行 | Bash | 继承当前模型 | git 操作、终端任务 |
+| **Explore** | 代码库探索 | Read、Glob、Grep | 继承（上限为 Opus） | 快速搜索、理解代码 |
+| **claude** | 不适合更专门 agent 的任务的通用兜底 agent | 所有工具 | 继承当前模型 | 没有专门 agent 的任务；被调度的后台会话的默认 agent |
 | **statusline-setup** | 状态栏配置 | Bash、Read、Write | Sonnet 4.6 | 配置状态栏显示 |
-| **Claude Code Guide** | 帮助与文档 | Read、Glob、Grep | Haiku 4.5 | 获取帮助、学习功能 |
+| **claude-code-guide** | 帮助与文档 | Read、Glob、Grep | Haiku 4.5 | 获取帮助、学习功能 |
 
 ### Subagent 配置字段
 
@@ -277,7 +277,7 @@ cp -r 03-skills/* ~/.claude/skills/
 /plugin list              # 列出已安装的 plugins
 /plugin install <name>    # 安装 plugin
 /plugin remove <name>     # 移除 plugin
-/plugin update <name>     # 更新 plugin
+claude plugin update <name>   # 更新 plugin（CLI；/plugin update 斜杠命令形式仅在正文中被提及，命令参考中并无该条目）
 ```
 
 ---
@@ -336,13 +336,18 @@ export GITHUB_TOKEN="your_token" && claude mcp add github -- npx -y @modelcontex
 | 事件 | 说明 | 触发时机 | 使用场景 |
 |-------|-------------|----------------|-----------|
 | `SessionStart` | 会话开始/恢复 | 会话初始化 | 初始化任务 |
+| `Setup` | 初始环境搭建（每个会话一次） | 会话首次启动 | 准备工具链、安装依赖 |
 | `InstructionsLoaded` | 指令已加载 | `CLAUDE.md` 或规则文件加载 | 自定义指令处理 |
 | `UserPromptSubmit` | 提示词提交前 | 用户发送消息 | 输入校验 |
+| `UserPromptExpansion` | 提示词被展开（@提及、斜杠命令解析） | 展开后、提交前 | 转换或检查展开后的提示词 |
 | `PreToolUse` | 工具执行前 | 任意工具运行之前 | 校验、日志 |
 | `PermissionRequest` | 显示权限对话框 | 敏感操作前 | 自定义审批流程 |
+| `PermissionDenied` | 用户拒绝权限请求 | 权限被拒绝后 | 日志、分析、策略执行 |
 | `PostToolUse` | 工具成功后 | 任意工具完成后 | 格式化、通知 |
 | `PostToolUseFailure` | 工具执行失败 | 工具报错后 | 错误处理、日志 |
+| `PostToolBatch` | 一批工具调用完成后 | 工具批次结束 | 汇总报告、批量校验 |
 | `Notification` | 发送通知时 | Claude 发送通知 | 外部提醒 |
+| `MessageDisplay` | 助手消息文本显示时 | 消息渲染过程中 | 转换或隐藏显示文本 |
 | `SubagentStart` | 启动 subagent | subagent 任务开始 | 初始化上下文 |
 | `SubagentStop` | subagent 完成 | subagent 任务结束 | 链式动作 |
 | `Stop` | Claude 完成响应 | 响应完成 | 清理、汇报 |
@@ -352,9 +357,12 @@ export GITHUB_TOKEN="your_token" && claude mcp add github -- npx -y @modelcontex
 | `TaskCreated` | 通过 TaskCreate 创建任务（仅在启用 todo 工具时触发 —— 在 Opus 4.8、Sonnet 5、Fable 5、Mythos 5 及更新模型上默认关闭；`CLAUDE_CODE_ENABLE_TODO_TOOLS=1` 可恢复） | 新任务创建 | 任务追踪、日志 |
 | `ConfigChange` | 配置更新 | 设置被修改 | 响应配置变化 |
 | `CwdChanged` | 当前工作目录变化 | 目录切换 | 目录级初始化 |
+| `DirectoryAdded` | 会话中注册了新的工作目录 | `/add-dir` 或 SDK `register_repo_root` | 为新目录配置工具链 |
 | `FileChanged` | 监控文件发生变化 | 文件被修改 | 文件监控、重建 |
 | `PreCompact` | 压缩前 | 上下文压缩前 | 状态保留 |
 | `PostCompact` | 压缩完成后 | 压缩完成 | 压缩后动作 |
+| `PreModelSwitch` | 应用模型切换之前 | 请求切换模型时 | 拦截或否决模型变更 |
+| `PostModelSwitch` | 会话模型变更之后 | 模型切换完成 | 记录或响应模型变更 |
 | `WorktreeCreate` | worktree 创建中 | git worktree 创建 | 设置 worktree 环境 |
 | `WorktreeRemove` | worktree 被移除 | git worktree 删除 | 清理 worktree 资源 |
 | `Elicitation` | MCP server 请求输入 | MCP elicitation | 输入校验 |
@@ -523,8 +531,10 @@ claude mcp add github -- npx -y @modelcontextprotocol/server-github
 
 ---
 
-**最后更新**: 2026 年 8 月 15 日
-**Claude Code 版本**: 2.1.233
+**最后更新**: 2026 年 9 月 2 日
+**Claude Code 版本**: 2.1.257
 **来源**:
 - https://code.claude.com/docs/en/commands
 - https://code.claude.com/docs/en/hooks
+- https://code.claude.com/docs/en/plugins-reference
+- https://code.claude.com/docs/en/discover-plugins

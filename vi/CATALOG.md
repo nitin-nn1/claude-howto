@@ -20,9 +20,9 @@
 | **Skills** | 10 bundled | 5 | 15 | [03-skills/](03-skills/) |
 | **Plugins** | - | 3 | 3 | [07-plugins/](07-plugins/) |
 | **MCP Servers** | 1 | 4 | 5 | [05-mcp/](05-mcp/) |
-| **Hooks** | 31 sự kiện | 9 | 40 | [06-hooks/](06-hooks/) |
+| **Hooks** | 33 sự kiện | 9 | 42 | [06-hooks/](06-hooks/) |
 | **Bộ Nhớ** | 7 loại | 3 | 10 | [02-memory/](02-memory/) |
-| **Tổng** | **115** | **38** | **153** | |
+| **Tổng** | **117** | **38** | **155** | |
 
 ---
 
@@ -141,10 +141,10 @@ Các trợ lý AI chuyên biệt với context bị cô lập cho các tasks c�
 |-------|-------------|-------|-------|-------------|
 | **general-purpose** | Tasks đa bước, nghiên cứu | All tools | Kế thừa model | Nghiên cứu phức tạp, tasks đa file |
 | **Plan** | Lập kế hoạch triển khai | Read, Glob, Grep, Bash | Kế thừa model | Thiết kế kiến trúc, lập kế hoạch |
-| **Explore** | Khám phá codebase | Read, Glob, Grep | Haiku 4.5 | Tìm kiếm nhanh, hiểu code |
-| **Bash** | Thực thi command | Bash | Kế thừa model | Operations Git, tasks terminal |
+| **Explore** | Khám phá codebase | Read, Glob, Grep | Kế thừa (giới hạn ở Opus) | Tìm kiếm nhanh, hiểu code |
+| **claude** | Tác nhân dự phòng cho các tác vụ không khớp tác nhân chuyên biệt nào | All tools | Kế thừa model | Tác vụ không có tác nhân chuyên biệt; tác nhân mặc định cho phiên nền được điều phối |
 | **statusline-setup** | Cấu hình status line | Bash, Read, Write | Sonnet 4.6 | Cấu hình hiển thị status line |
-| **Claude Code Guide** | Trợ giúp và tài liệu | Read, Glob, Grep | Haiku 4.5 | Nhận trợ giúp, học tính năng |
+| **claude-code-guide** | Trợ giúp và tài liệu | Read, Glob, Grep | Haiku 4.5 | Nhận trợ giúp, học tính năng |
 
 ### Subagent Configuration Fields
 
@@ -273,7 +273,7 @@ Bộ sưu tập được đóng gói của commands, agents, MCP servers, và ho
 /plugin list              # Liệt kê plugins đã cài
 /plugin install <name>    # Cài plugin
 /plugin remove <name>     # Gỡ plugin
-/plugin update <name>     # Cập nhật plugin
+claude plugin update <name>   # Cập nhật plugin (CLI; dạng slash /plugin update được nhắc trong phần văn bản nhưng không có trong tài liệu tham chiếu lệnh)
 ```
 
 ---
@@ -332,13 +332,18 @@ Tự động hóa dựa trên sự kiện thực thi shell commands trên các s
 | Event | Mô Tả | Khi Được Kích Hoạt | Use Cases |
 |-------|-------------|----------------|-----------|
 | `SessionStart` | Session bắt đầu/tiếp tục | Khởi tạo session | Tasks thiết lập |
+| `Setup` | Thiết lập môi trường ban đầu (một lần mỗi session) | Bootstrap session lần đầu | Cài đặt tooling, cài dependencies |
 | `InstructionsLoaded` | Hướng dẫn được tải | CLAUDE.md hoặc file rules được tải | Xử lý hướng dẫn tùy chỉnh |
 | `UserPromptSubmit` | Trước khi xử lý prompt | User gửi tin nhắn | Xác thực input |
+| `UserPromptExpansion` | Prompt được mở rộng (@-mentions, slash commands) | Sau khi mở rộng, trước khi gửi | Biến đổi hoặc kiểm tra prompt đã mở rộng |
 | `PreToolUse` | Trước khi thực thi tool | Trước khi bất kỳ tool chạy | Xác thực, logging |
 | `PermissionRequest` | Dialog permission được hiển thị | Trước hành động nhạy cảm | Flows phê duyệt tùy chỉnh |
+| `PermissionDenied` | Người dùng từ chối yêu cầu quyền | Sau khi từ chối quyền | Ghi log, phân tích, thực thi chính sách |
 | `PostToolUse` | Sau khi tool thành công | Sau khi bất kỳ tool hoàn thành | Formatting, thông báo |
 | `PostToolUseFailure` | Thực thi tool thất bại | Sau khi tool lỗi | Xử lý lỗi, logging |
+| `PostToolBatch` | Sau khi một lô tool use hoàn tất | Kết thúc một lô tool | Báo cáo tổng hợp, xác thực theo lô |
 | `Notification` | Thông báo được gửi | Claude gửi thông báo | Cảnh báo bên ngoài |
+| `MessageDisplay` | Văn bản phản hồi được hiển thị | Trong khi message render | Biến đổi hoặc ẩn nội dung hiển thị |
 | `SubagentStart` | Subagent được tạo | Task subagent bắt đầu | Khởi tạo context subagent |
 | `SubagentStop` | Subagent hoàn thành | Task subagent hoàn tất | Chuỗi hành động |
 | `Stop` | Claude hoàn thành phản hồi | Phản hồi hoàn tất | Dọn dẹp, báo cáo |
@@ -348,9 +353,12 @@ Tự động hóa dựa trên sự kiện thực thi shell commands trên các s
 | `TaskCreated` | Task được tạo qua TaskCreate (chỉ phát ra khi bật todo tools — tắt mặc định trên Opus 4.8, Sonnet 5, Fable 5, Mythos 5 và mới hơn; `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` khôi phục) | Task mới được tạo | Theo dõi task, logging |
 | `ConfigChange` | Cấu hình được cập nhật | Settings được sửa đổi | Phản ứng thay đổi config |
 | `CwdChanged` | Thư mục làm việc thay đổi | Thư mục thay đổi | Thiết lập cụ thể theo thư mục |
+| `DirectoryAdded` | Thư mục làm việc mới được đăng ký giữa session | `/add-dir` hoặc SDK `register_repo_root` | Thiết lập tooling cho thư mục mới |
 | `FileChanged` | File được theo dõi thay đổi | File được sửa | Giám sát file, rebuild |
 | `PreCompact` | Trước operation compact | Nén context | Bảo toàn trạng thái |
 | `PostCompact` | Sau khi compact hoàn tất | Compact xong | Hành động post-compact |
+| `PreModelSwitch` | Trước khi áp dụng yêu cầu đổi model | Có yêu cầu đổi model | Kiểm soát hoặc chặn việc đổi model |
+| `PostModelSwitch` | Sau khi model của session thay đổi | Đổi model hoàn tất | Ghi log hoặc phản ứng khi đổi model |
 | `WorktreeCreate` | Worktree đang được tạo | Git worktree được tạo | Thiết lập môi trường worktree |
 | `WorktreeRemove` | Worktree đang bị gỡ | Git worktree bị gỡ | Dọn dẹp tài nguyên worktree |
 | `Elicitation` | MCP server yêu cầu input | MCP elicitation | Xác thực input |
@@ -514,8 +522,10 @@ chmod +x ~/.claude/hooks/*.sh
 
 ---
 
-**Cập Nhật Lần Cuối**: Ngày 15 tháng 8 năm 2026
-**Phiên Bản Claude Code**: 2.1.233
+**Cập Nhật Lần Cuối**: Ngày 2 tháng 9 năm 2026
+**Phiên Bản Claude Code**: 2.1.257
 **Nguồn**:
 - https://code.claude.com/docs/en/commands
 - https://code.claude.com/docs/en/hooks
+- https://code.claude.com/docs/en/plugins-reference
+- https://code.claude.com/docs/en/discover-plugins

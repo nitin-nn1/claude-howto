@@ -241,7 +241,7 @@ These steps capture the core recommendations for smooth workflows with Claude Co
 | **Extended Thinking** | Deep reasoning toggle via `Alt+T`/`Option+T` or `MAX_THINKING_TOKENS` env var | [Advanced Features](09-advanced-features/) |
 | **Permission Modes** | Fine-grained control: manual (formerly default), acceptEdits, plan, auto, dontAsk, bypassPermissions | [Advanced Features](09-advanced-features/) |
 | **7-Tier Memory** | Managed Policy, Project, Project Rules, User, User Rules, Local, Auto Memory | [Memory Guide](02-memory/) |
-| **Hook Events** | 31 events: PreToolUse, PostToolUse, PostToolUseFailure, Stop, StopFailure, SubagentStart, SubagentStop, Notification, Elicitation, and more | [Hooks Guide](06-hooks/) |
+| **Hook Events** | 33 events: PreToolUse, PostToolUse, PostToolUseFailure, Stop, StopFailure, SubagentStart, SubagentStop, Notification, Elicitation, and more | [Hooks Guide](06-hooks/) |
 | **Agent Teams** | Coordinate multiple agents working together on complex tasks | [Subagents Guide](04-subagents/) |
 | **Scheduled Tasks** | Set up recurring tasks with `/loop` and cron tools | [Advanced Features](09-advanced-features/) |
 | **Chrome Integration** | Browser automation with headless Chromium | [Advanced Features](09-advanced-features/) |
@@ -252,8 +252,8 @@ These steps capture the core recommendations for smooth workflows with Claude Co
 | **/run, /verify, /run-skill-generator** | Bundled skills to launch your project, confirm a fix works, and generate per-project run/verify skills (v2.1.145+) | [Skills Guide](03-skills/) |
 
 ---
-**Last Updated**: August 4, 2026
-**Claude Code Version**: 2.1.220
+**Last Updated**: August 19, 2026
+**Claude Code Version**: 2.1.235
 **Sources**:
 - https://code.claude.com/docs/en/overview
 - https://code.claude.com/docs/en/changelog
